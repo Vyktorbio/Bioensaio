@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=1280">
+<title>Direções de identidade — BioEnsaio</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap');
+  *{box-sizing:border-box;margin:0}
+  body{font-family:Inter,system-ui,sans-serif;background:#eceff1;color:#1a1a1a;padding:24px}
+  h1{font-size:22px;margin-bottom:4px}
+  .sub{color:#666;font-size:13px;margin-bottom:20px}
+  .row{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .col{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.08)}
+  .hd{padding:16px 18px;display:flex;align-items:center;gap:12px;color:#fff}
+  .hd .mark{width:40px;height:40px;flex:0 0 40px}
+  .hd h2{font-size:19px;font-weight:800;letter-spacing:-.02em;font-family:Sora,Inter,sans-serif}
+  .hd p{font-size:11px;opacity:.9;margin-top:1px}
+  .nav{display:flex;gap:6px;padding:8px 12px;overflow:hidden}
+  .nav span{font-size:12px;font-weight:600;color:#fff;padding:5px 10px;border-radius:12px;white-space:nowrap}
+  .body{padding:18px}
+  .name{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px}
+  .btn{display:block;width:100%;text-align:center;color:#fff;border:none;padding:13px;border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;margin-bottom:10px}
+  .btn2{display:block;width:100%;text-align:center;background:#fff;border:1.5px solid;padding:11px;border-radius:12px;font-size:14px;font-weight:600;font-family:inherit;margin-bottom:14px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .chip{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px}
+  .card{border:1px solid #e6e6e6;border-radius:12px;padding:12px;background:#fafafa}
+  .card h3{font-size:13px;margin-bottom:8px}
+  .bars{display:flex;align-items:flex-end;gap:10px;height:90px;padding-top:14px}
+  .bars div{flex:1;border-radius:6px 6px 0 0;position:relative}
+  .bars div b{position:absolute;top:-15px;left:0;right:0;text-align:center;font-size:11px;font-weight:800}
+  .pal{display:flex;gap:6px;margin-top:14px}
+  .pal i{width:26px;height:26px;border-radius:7px;display:block}
+  .tag{display:inline-block;font-size:11px;color:#888;margin-top:10px}
+</style></head>
+<body>
+<h1>BioEnsaio — 3 direções de identidade</h1>
+<p class="sub">Mesma estrutura, três personalidades. Escolha A, B ou C (ou misture).</p>
+<div class="row">
+
+  <!-- A: CAMPO -->
+  <div class="col">
+    <div class="hd" style="background:linear-gradient(135deg,#14532d,#3f8a3f)">
+      <svg class="mark" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="rgba(255,255,255,.12)"/>
+        <path d="M24 9c-7 4-11 9-11 16a11 11 0 0 0 22 0c0-7-4-12-11-16z" fill="#a3e635"/>
+        <path d="M14 31c5 3 15 3 20 0" stroke="#14532d" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      </svg>
+      <div><h2>BioEnsaio</h2><p>Estatística para bioensaios</p></div>
+    </div>
+    <div class="nav"><span style="background:rgba(255,255,255,.30)">Análise</span><span style="background:rgba(255,255,255,.14)">Tempo</span><span style="background:rgba(255,255,255,.14)">Calda</span><span style="background:rgba(255,255,255,.14)">Campo</span></div>
+    <div class="body">
+      <div class="name" style="color:#3f8a3f">A · Campo</div>
+      <button class="btn" style="background:#15803d">Analisar</button>
+      <button class="btn2" style="border-color:#15803d;color:#15803d">Exportar PDF</button>
+      <div class="chips">
+        <span class="chip" style="background:#dcfce7;color:#15803d">normal</span>
+        <span class="chip" style="background:#fef9c3;color:#a16207">heterogêneo</span>
+        <span class="chip" style="background:#e0f2fe;color:#0369a1">p=0,012</span>
+      </div>
+      <div class="card"><h3>CL50 por produto</h3>
+        <div class="bars">
+          <div style="height:80%;background:#15803d"><b style="color:#15803d">a</b></div>
+          <div style="height:55%;background:#3f8a3f"><b style="color:#3f8a3f">b</b></div>
+          <div style="height:30%;background:#84cc16"><b style="color:#65a30d">c</b></div>
+        </div>
+      </div>
+      <div class="pal"><i style="background:#14532d"></i><i style="background:#15803d"></i><i style="background:#84cc16"></i><i style="background:#a16207"></i><i style="background:#0369a1"></i></div>
+      <span class="tag">Terroso, agronômico. Verde profundo + lima.</span>
+    </div>
+  </div>
+
+  <!-- B: LABORATÓRIO -->
+  <div class="col">
+    <div class="hd" style="background:linear-gradient(135deg,#0f766e,#0e7490)">
+      <svg class="mark" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="rgba(255,255,255,.12)"/>
+        <path d="M20 8v9l-7 14a4 4 0 0 0 3.6 5.8h14.8A4 4 0 0 0 35 31l-7-14V8" stroke="#5eead4" stroke-width="2.6" fill="none" stroke-linejoin="round"/>
+        <path d="M16 26h16" stroke="#5eead4" stroke-width="2.6"/>
+        <circle cx="22" cy="30" r="1.6" fill="#5eead4"/><circle cx="27" cy="33" r="1.6" fill="#5eead4"/>
+      </svg>
+      <div><h2>BioEnsaio</h2><p>Estatística para bioensaios</p></div>
+    </div>
+    <div class="nav"><span style="background:rgba(255,255,255,.30)">Análise</span><span style="background:rgba(255,255,255,.14)">Tempo</span><span style="background:rgba(255,255,255,.14)">Calda</span><span style="background:rgba(255,255,255,.14)">Campo</span></div>
+    <div class="body">
+      <div class="name" style="color:#0e7490">B · Laboratório</div>
+      <button class="btn" style="background:#0d9488">Analisar</button>
+      <button class="btn2" style="border-color:#0d9488;color:#0d9488">Exportar PDF</button>
+      <div class="chips">
+        <span class="chip" style="background:#ccfbf1;color:#0f766e">normal</span>
+        <span class="chip" style="background:#fef3c7;color:#b45309">heterogêneo</span>
+        <span class="chip" style="background:#e0e7ff;color:#4338ca">p=0,012</span>
+      </div>
+      <div class="card"><h3>CL50 por produto</h3>
+        <div class="bars">
+          <div style="height:80%;background:#0d9488"><b style="color:#0f766e">a</b></div>
+          <div style="height:55%;background:#0891b2"><b style="color:#0e7490">b</b></div>
+          <div style="height:30%;background:#22d3ee"><b style="color:#0891b2">c</b></div>
+        </div>
+      </div>
+      <div class="pal"><i style="background:#0f766e"></i><i style="background:#0d9488"></i><i style="background:#22d3ee"></i><i style="background:#b45309"></i><i style="background:#4338ca"></i></div>
+      <span class="tag">Clínico, moderno, "ciência". Teal + grafite.</span>
+    </div>
+  </div>
+
+  <!-- C: BIOENSAIO -->
+  <div class="col">
+    <div class="hd" style="background:linear-gradient(135deg,#166534,#15803d)">
+      <svg class="mark" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="rgba(255,255,255,.12)"/>
+        <circle cx="24" cy="24" r="13" stroke="#fff" stroke-width="2.2" opacity=".5"/>
+        <path d="M13 20c4 0 5 9 9 9s4-13 8-13 3 8 5 8" stroke="#fbbf24" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div><h2>BioEnsaio</h2><p>Estatística para bioensaios</p></div>
+    </div>
+    <div class="nav"><span style="background:rgba(255,255,255,.30)">Análise</span><span style="background:rgba(255,255,255,.14)">Tempo</span><span style="background:rgba(255,255,255,.14)">Calda</span><span style="background:rgba(255,255,255,.14)">Campo</span></div>
+    <div class="body">
+      <div class="name" style="color:#b45309">C · Bioensaio</div>
+      <button class="btn" style="background:#16a34a">Analisar</button>
+      <button class="btn2" style="border-color:#d97706;color:#b45309">Exportar PDF</button>
+      <div class="chips">
+        <span class="chip" style="background:#dcfce7;color:#15803d">normal</span>
+        <span class="chip" style="background:#ffedd5;color:#c2410c">heterogêneo</span>
+        <span class="chip" style="background:#dbeafe;color:#1d4ed8">p=0,012</span>
+      </div>
+      <div class="card"><h3>CL50 por produto</h3>
+        <div class="bars">
+          <div style="height:80%;background:#16a34a"><b style="color:#15803d">a</b></div>
+          <div style="height:55%;background:#16a34a;opacity:.7"><b style="color:#15803d">b</b></div>
+          <div style="height:30%;background:#fbbf24"><b style="color:#b45309">c</b></div>
+        </div>
+      </div>
+      <div class="pal"><i style="background:#166534"></i><i style="background:#16a34a"></i><i style="background:#fbbf24"></i><i style="background:#d97706"></i><i style="background:#1d4ed8"></i></div>
+      <span class="tag">Verde vivo + âmbar de destaque. Energético, "data".</span>
+    </div>
+  </div>
+
+</div>
+</body></html>

@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Node / Capacitor
+node_modules/
+
+# Android build (pesado, gerado)
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/.idea/
+android/local.properties
+
+# Bundle pesado do Pyodide (a versão web usa o CDN; o APK gera localmente)
+www/pyodide/
+
+# Saídas geradas
+web-deploy/
+dist/
+
+# Sistema
+.DS_Store
+*.log

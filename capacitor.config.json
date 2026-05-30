@@ -1,0 +1,11 @@
+{
+  "appId": "br.bioensaio.app",
+  "appName": "BioEnsaio",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

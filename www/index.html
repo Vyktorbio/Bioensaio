@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0f766e" />
+<title>BioEnsaio — Estatística para Bioensaios</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icons/icon-180.png" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header class="topo">
+  <div class="topo-inner">
+    <div class="logo">
+      <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <path d="M20 8v9l-7.4 14.4A4 4 0 0 0 16.2 37h15.6a4 4 0 0 0 3.6-5.6L28 17V8" stroke="#fff" stroke-width="2.6" fill="rgba(255,255,255,.14)" stroke-linejoin="round"/>
+        <path d="M18 8h12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M16.5 27h15" stroke="#5eead4" stroke-width="2.4" stroke-linecap="round"/>
+        <circle cx="22" cy="31" r="1.7" fill="#5eead4"/><circle cx="27.5" cy="33.5" r="1.4" fill="#5eead4"/><circle cx="24" cy="29" r="1.2" fill="#5eead4"/>
+      </svg>
+    </div>
+    <div>
+      <h1>BioEnsaio</h1>
+      <p class="sub">Estatística inteligente para bioensaios</p>
+    </div>
+    <span id="badge-offline" class="badge" title="Funciona offline">offline</span>
+  </div>
+</header>
+
+<nav class="appnav">
+  <a class="appnav-item ativo" href="#" data-modo="analise">📊 Análise</a>
+  <a class="appnav-item" href="#" data-modo="tempo">⏱️ Tempo</a>
+  <a class="appnav-item" href="calc/calda.html">🧪 Calda</a>
+  <a class="appnav-item" href="calc/campo.html">🚜 Campo</a>
+</nav>
+
+<main>
+  <!-- 1. DADOS -->
+  <section class="card" id="card-dados">
+    <h2><span class="num">1</span> Dados</h2>
+    <div class="tabs" role="tablist">
+      <button class="tab ativo" data-modo="colar">Colar</button>
+      <button class="tab" data-modo="arquivo">Arquivo</button>
+      <button class="tab" data-modo="digitar">Digitar</button>
+      <button class="tab" data-modo="exemplo">Exemplos</button>
+    </div>
+
+    <div class="painel" data-painel="colar">
+      <p class="dica">Cole sua tabela do Excel/Sheets (com cabeçalho). Tab, vírgula ou ponto-e-vírgula.</p>
+      <textarea id="entrada-colar" rows="7" placeholder="tratamento&#9;dose&#9;mortos&#9;total&#10;Controle&#9;0&#9;2&#9;20&#10;P1&#9;10&#9;18&#9;20"></textarea>
+      <button class="btn" id="btn-colar">Carregar dados</button>
+    </div>
+
+    <div class="painel oculto" data-painel="arquivo">
+      <p class="dica">Selecione um arquivo <b>.xlsx</b>, <b>.xls</b> ou <b>.csv</b>.</p>
+      <input type="file" id="entrada-arquivo" accept=".xlsx,.xls,.csv" />
+    </div>
+
+    <div class="painel oculto" data-painel="digitar">
+      <p class="dica">Monte a tabela. Use + para linhas/colunas.</p>
+      <div class="grade-acoes">
+        <button class="btn-mini" id="add-col">+ coluna</button>
+        <button class="btn-mini" id="add-lin">+ linha</button>
+      </div>
+      <div id="grade-wrap" class="grade-wrap"></div>
+      <button class="btn" id="btn-digitar">Usar esta tabela</button>
+    </div>
+
+    <div class="painel oculto" data-painel="exemplo">
+      <p class="dica">Conjuntos de exemplo para testar o app.</p>
+      <select id="sel-exemplo" class="select-full"></select>
+      <button class="btn" id="btn-exemplo">Carregar exemplo</button>
+    </div>
+
+    <div id="preview" class="preview oculto"></div>
+  </section>
+
+  <!-- 2. PAPÉIS -->
+  <section class="card oculto" id="card-papeis">
+    <h2><span class="num">2</span> Papéis das colunas</h2>
+    <p class="dica">O app já tentou adivinhar. Ajuste se precisar.</p>
+    <div id="papeis-lista" class="papeis-lista"></div>
+  </section>
+
+  <!-- 3. OPÇÕES -->
+  <section class="card oculto" id="card-opcoes">
+    <h2><span class="num">3</span> Opções</h2>
+    <div class="opcoes-grid">
+      <label>Nível de significância (α)
+        <select id="opt-alfa">
+          <option value="0.05" selected>0,05 (5%)</option>
+          <option value="0.01">0,01 (1%)</option>
+          <option value="0.10">0,10 (10%)</option>
+        </select>
+      </label>
+      <label>Tipo de resposta
+        <select id="opt-tipo">
+          <option value="">Detectar automaticamente</option>
+          <option value="continua">Contínua (diâmetro, peso…)</option>
+          <option value="contagem">Contagem (nº de colônias/insetos)</option>
+          <option value="proporcao">Proporção/severidade (%)</option>
+          <option value="binario">Binária (vivo/morto)</option>
+          <option value="binomial">Binomial (x de n)</option>
+        </select>
+      </label>
+      <label>Unidade da dose
+        <input type="text" id="opt-unidade" list="unidades-dose" placeholder="ex.: ppm, L/ha, g/ha" />
+        <datalist id="unidades-dose">
+          <option value="ppm"></option><option value="%"></option>
+          <option value="L/ha"></option><option value="mL/ha"></option>
+          <option value="kg/ha"></option><option value="g/ha"></option>
+          <option value="mg/ha"></option><option value="g/L"></option>
+          <option value="mg/L"></option><option value="µg/mL"></option>
+          <option value="g p.c./ha"></option><option value="g i.a./ha"></option>
+          <option value="mL/100L"></option><option value="g/100L"></option>
+        </datalist>
+      </label>
+      <label>Níveis de CL/DL (%) <span class="op-tag">dose-resposta</span>
+        <input type="text" id="opt-niveis" placeholder="ex.: 50; 90; 95; 99" />
+      </label>
+      <label>Mortalidade do controle (%) <span class="op-tag">Abbott</span>
+        <input type="text" id="opt-controle" inputmode="decimal" placeholder="ex.: 8 (se não há dose 0)" />
+      </label>
+      <label class="linha-toda">
+        <input type="checkbox" id="opt-logdose" checked />
+        Ajustar dose-resposta em log₁₀ da dose (recomendado)
+      </label>
+    </div>
+  </section>
+
+  <!-- 3T. OPÇÕES — MORTALIDADE NO TEMPO -->
+  <section class="card oculto" id="card-opcoes-tempo">
+    <h2><span class="num">3</span> Opções (tempo)</h2>
+    <div class="opcoes-grid">
+      <label>Controle negativo
+        <select id="opt-controle-neg"><option value="">(1º tratamento)</option></select>
+      </label>
+      <label>Scott-Knott a partir de
+        <select id="opt-sk">
+          <option value="6" selected>&gt; 6 tratamentos</option>
+          <option value="0">sempre Scott-Knott</option>
+          <option value="999">sempre Tukey</option>
+        </select>
+      </label>
+      <label>Nível de significância (α)
+        <select id="opt-alfa-tempo">
+          <option value="0.05" selected>0,05 (5%)</option>
+          <option value="0.01">0,01 (1%)</option>
+          <option value="0.10">0,10 (10%)</option>
+        </select>
+      </label>
+      <label>Mort. máx. do controle (%)
+        <input type="text" id="opt-ctrlmax" inputmode="decimal" value="20" />
+      </label>
+    </div>
+  </section>
+
+  <div class="acao-fixa">
+    <button class="btn-principal" id="btn-analisar" disabled>Analisar</button>
+  </div>
+
+  <!-- 4. RESULTADOS -->
+  <section class="card oculto" id="card-resultados">
+    <h2><span class="num">4</span> Resultados</h2>
+    <div id="resultados"></div>
+    <div class="export-acoes">
+      <button class="btn-sec" id="btn-imprimir">Imprimir / PDF</button>
+      <button class="btn-sec" id="btn-copiar">Copiar relatório</button>
+    </div>
+  </section>
+</main>
+
+<!-- Overlay de carregamento do motor -->
+<div id="overlay" class="overlay oculto">
+  <div class="overlay-box">
+    <div class="spinner"></div>
+    <p id="overlay-msg">Carregando motor estatístico…</p>
+    <p class="overlay-sub" id="overlay-sub">Primeira vez pode levar alguns segundos.</p>
+  </div>
+</div>
+
+<footer class="rodape">
+  <p>BioEnsaio • probit/logit, ANOVA, GLM, Tukey &amp; Scott-Knott • cálculos 100% no seu aparelho</p>
+</footer>
+
+<script src="lib/xlsx.full.min.js"></script>
+<script src="pyodide/pyodide.js"></script>
+<script src="exemplos.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
