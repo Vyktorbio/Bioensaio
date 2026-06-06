@@ -312,7 +312,7 @@ h1,h2,.hero h1,.card h2{font-family:'Sora var','Inter var',sans-serif}
 </style>
 </head>
 <body>
-<div style="position:sticky;top:0;z-index:9999;display:flex;gap:6px;align-items:center;background:linear-gradient(135deg,#0f766e,#0e7490);padding:9px 12px;font-family:'Sora var','Inter var',-apple-system,system-ui,sans-serif;box-shadow:0 1px 4px rgba(15,23,42,.2);overflow-x:auto"><a href="../index.html" style="color:#fff;text-decoration:none;font-weight:800;font-size:15px;margin-right:auto;white-space:nowrap">BioEnsaio</a><a href="../index.html" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.12);white-space:nowrap">📊 Análise</a><a href="../index.html#tempo" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.12);white-space:nowrap">⏱️ Tempo</a><a href="calda.html" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.12);white-space:nowrap">🧪 Calda</a><a href="campo.html" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.30);white-space:nowrap">🚜 Campo</a></div>
+<div style="position:sticky;top:0;z-index:9999;display:flex;gap:6px;align-items:center;background:linear-gradient(135deg,#0f766e,#0e7490);padding:9px 12px;font-family:'Sora var','Inter var',-apple-system,system-ui,sans-serif;box-shadow:0 1px 4px rgba(15,23,42,.2);overflow-x:auto"><a href="../index.html" style="color:#fff;text-decoration:none;font-weight:800;font-size:15px;margin-right:auto;white-space:nowrap">BioEstat</a><a href="../index.html" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.12);white-space:nowrap">Análise</a><a href="../index.html#tempo" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.12);white-space:nowrap">Tempo</a><a href="calda.html" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.12);white-space:nowrap">Calda</a><a href="campo.html" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.30);white-space:nowrap">Campo</a></div>
 
   <div class="wrap">
     <header class="hero">
@@ -565,7 +565,7 @@ h1,h2,.hero h1,.card h2{font-family:'Sora var','Inter var',sans-serif}
     b.classList.remove('cv-ok','cv-warn','cv-danger','cv-none');
     if(cv===null){b.classList.add('cv-none');ic.textContent='—';tx.textContent='Preencha ao menos 2 bicos para calcular o CV%';return;}
     var s=formatBR(cv,1);
-    if(cv<=10){b.classList.add('cv-ok');ic.textContent='✓';tx.textContent='CV = '+s+'% — Uniformidade boa. Bicos em boas condições.';}
+    if(cv<=10){b.classList.add('cv-ok');ic.textContent='OK';tx.textContent='CV = '+s+'% — Uniformidade boa. Bicos em boas condições.';}
     else if(cv<=15){b.classList.add('cv-warn');ic.textContent='!';tx.textContent='CV = '+s+'% — Uniformidade aceitável. Verificar desgaste dos bicos.';}
     else{b.classList.add('cv-danger');ic.textContent='✕';tx.textContent='CV = '+s+'% — Uniformidade ruim. Trocar ou limpar bicos antes de aplicar.';}
   }

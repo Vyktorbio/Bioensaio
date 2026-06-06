@@ -50,6 +50,7 @@ let pyodide = null;
 let pyPronto = null;          // promessa de inicialização
 let COLUNAS = [];             // [{nome, valores:[...]}]
 let MODO = "analise";         // "analise" | "tempo"
+let MATRIZ_IMPORT = null;     // linhas normalizadas da planilha exportada pelo Matriz
 
 const $ = (s) => document.querySelector(s);
 const el = (t, c, txt) => { const e=document.createElement(t); if(c)e.className=c; if(txt!=null)e.textContent=txt; return e; };
@@ -167,6 +168,209 @@ $("#entrada-arquivo").addEventListener("change", async (ev) => {
     carregarColunas(matrizParaColunas(aoa.map(r=>r.map(c=>c===null?"":String(c)))));
   } catch(e){ alert("Erro ao ler arquivo: " + e.message); }
 });
+
+/* Importar planilha exportada pelo Matriz */
+function normCab(s){
+  return String(s||"").trim().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"");
+}
+function valorLinha(row, nomes){
+  for(const nome of nomes){
+    const k=normCab(nome);
+    if(Object.prototype.hasOwnProperty.call(row,k)) return row[k];
+  }
+  return "";
+}
+function numBR(v){
+  if(v==null || v==="") return NaN;
+  if(typeof v==="number") return v;
+  let s=String(v).trim();
+  if(!s) return NaN;
+  if(s.includes(",") && s.includes(".")) s=s.replace(/\./g,"").replace(",",".");
+  else s=s.replace(",",".");
+  const n=parseFloat(s);
+  return Number.isFinite(n) ? n : NaN;
+}
+function textoLimpo(v){ return String(v==null?"":v).trim(); }
+function linhasMatrizDeAoa(aoa){
+  const idx=aoa.findIndex(r=>{
+    const ns=(r||[]).map(normCab);
+    return ns.includes("tratamento") && ns.includes("variavel") && ns.includes("valor");
+  });
+  if(idx<0) throw new Error("Não achei cabeçalho do Matriz. Preciso de Tratamento, Variavel e Valor.");
+  const headers=aoa[idx].map(normCab);
+  const linhas=[];
+  aoa.slice(idx+1).forEach((r,i)=>{
+    const obj={_linha:i+idx+2};
+    headers.forEach((h,j)=>{ if(h) obj[h]=r[j]; });
+    const valor=numBR(valorLinha(obj,["Valor"]));
+    const trat=textoLimpo(valorLinha(obj,["Tratamento"]));
+    const variavel=textoLimpo(valorLinha(obj,["Variavel","Variável"]));
+    if(!trat || !variavel || !Number.isFinite(valor)) return;
+    linhas.push({
+      local:textoLimpo(valorLinha(obj,["Local"])),
+      quadra:textoLimpo(valorLinha(obj,["Quadra"])),
+      cultura:textoLimpo(valorLinha(obj,["Cultura"])),
+      estudo:textoLimpo(valorLinha(obj,["Estudo"])),
+      descricao:textoLimpo(valorLinha(obj,["Descricao","Descrição"])),
+      data:textoLimpo(valorLinha(obj,["Data_avaliacao","Data avaliação","Data_avaliação"])),
+      tipo:textoLimpo(valorLinha(obj,["Tipo"])),
+      bbch:textoLimpo(valorLinha(obj,["BBCH"])),
+      tratamento:trat,
+      repeticao:textoLimpo(valorLinha(obj,["Repeticao","Repetição","Bloco"])) || "1",
+      produto:textoLimpo(valorLinha(obj,["Produto"])),
+      variavel:variavel,
+      valor:valor
+    });
+  });
+  return linhas;
+}
+function matrizKey(r){ return [r.local,r.quadra,r.estudo,r.descricao].join("||"); }
+function matrizLabel(key){
+  const r=(MATRIZ_IMPORT&&MATRIZ_IMPORT.linhas||[]).find(x=>matrizKey(x)===key);
+  if(!r) return key || "(sem estudo)";
+  const partes=[r.estudo||"(sem estudo)", r.quadra, r.local].filter(Boolean);
+  return partes.join(" - ");
+}
+function unicoOrdenado(arr){
+  return [...new Set(arr.filter(v=>String(v).trim()!==""))].sort((a,b)=>String(a).localeCompare(String(b), "pt-BR", {numeric:true}));
+}
+function addOpcao(sel, valor, texto){
+  const o=el("option"); o.value=valor; o.textContent=texto==null?valor:texto; sel.appendChild(o);
+}
+function matrizLinhasFiltradas(){
+  if(!MATRIZ_IMPORT) return [];
+  const estudo=$("#matriz-estudo") ? $("#matriz-estudo").value : "";
+  const data=$("#matriz-data") ? $("#matriz-data").value : "";
+  const variavel=$("#matriz-variavel") ? $("#matriz-variavel").value : "";
+  return MATRIZ_IMPORT.linhas.filter(r=>
+    (!estudo || matrizKey(r)===estudo) &&
+    (!data || r.data===data) &&
+    (!variavel || r.variavel===variavel)
+  );
+}
+function atualizarMatrizFiltros(){
+  if(!MATRIZ_IMPORT) return;
+  const linhas=MATRIZ_IMPORT.linhas;
+  const estudoSel=$("#matriz-estudo"), dataSel=$("#matriz-data"), varSel=$("#matriz-variavel");
+  if(!estudoSel || !dataSel || !varSel) return;
+
+  const estudo=estudoSel.value;
+  const datas=unicoOrdenado(linhas.filter(r=>!estudo || matrizKey(r)===estudo).map(r=>r.data));
+  const dataAtual=dataSel.value;
+  dataSel.innerHTML="";
+  datas.forEach(d=>addOpcao(dataSel,d,d));
+  if(datas.includes(dataAtual)) dataSel.value=dataAtual;
+
+  const data=dataSel.value;
+  const vars=unicoOrdenado(linhas.filter(r=>
+    (!estudo || matrizKey(r)===estudo) && (!data || r.data===data)
+  ).map(r=>r.variavel));
+  const varAtual=varSel.value;
+  varSel.innerHTML="";
+  vars.forEach(v=>addOpcao(varSel,v,v));
+  if(vars.includes(varAtual)) varSel.value=varAtual;
+  atualizarMatrizPreview();
+}
+function atualizarMatrizPreview(){
+  const out=$("#matriz-preview"); if(!out) return;
+  const linhas=matrizLinhasFiltradas();
+  const trats=unicoOrdenado(linhas.map(r=>r.tratamento));
+  const reps=unicoOrdenado(linhas.map(r=>r.repeticao));
+  out.innerHTML="";
+  out.appendChild(el("p","dica",`${linhas.length} valores prontos - ${trats.length} tratamento(s) x ${reps.length} repetição(ões).`));
+  if(linhas.length){
+    const tab=el("table");
+    const thead=el("thead"), htr=el("tr");
+    ["tratamento","bloco","valor","produto"].forEach(h=>htr.appendChild(el("th",null,h)));
+    thead.appendChild(htr); tab.appendChild(thead);
+    const tb=el("tbody");
+    linhas.slice(0,6).forEach(r=>{
+      const tr=el("tr");
+      [r.tratamento,r.repeticao,String(r.valor),r.produto].forEach(v=>tr.appendChild(el("td",null,v)));
+      tb.appendChild(tr);
+    });
+    tab.appendChild(tb);
+    const rol=el("div","tab-rolavel"); rol.appendChild(tab); out.appendChild(rol);
+  }
+}
+function renderMatrizImportador(){
+  const box=$("#matriz-importador"); if(!box || !MATRIZ_IMPORT) return;
+  box.innerHTML=""; box.classList.remove("oculto");
+  box.appendChild(el("p","dica",`${MATRIZ_IMPORT.linhas.length} linhas de avaliação encontradas na aba Dados.`));
+
+  const grid=el("div","matriz-grid");
+  const estudoWrap=el("label",null,"Estudo");
+  const estudoSel=el("select"); estudoSel.id="matriz-estudo";
+  unicoOrdenado(MATRIZ_IMPORT.linhas.map(matrizKey)).forEach(k=>addOpcao(estudoSel,k,matrizLabel(k)));
+  estudoWrap.appendChild(estudoSel); grid.appendChild(estudoWrap);
+
+  const dataWrap=el("label",null,"Data");
+  const dataSel=el("select"); dataSel.id="matriz-data";
+  dataWrap.appendChild(dataSel); grid.appendChild(dataWrap);
+
+  const varWrap=el("label",null,"Variável");
+  const varSel=el("select"); varSel.id="matriz-variavel";
+  varWrap.appendChild(varSel); grid.appendChild(varWrap);
+
+  const produtoWrap=el("label","matriz-check");
+  const produto=el("input"); produto.type="checkbox"; produto.id="matriz-produto";
+  produtoWrap.appendChild(produto);
+  produtoWrap.appendChild(document.createTextNode(" Incluir produto no nome do tratamento"));
+  grid.appendChild(produtoWrap);
+  box.appendChild(grid);
+
+  const preview=el("div","matriz-preview"); preview.id="matriz-preview"; box.appendChild(preview);
+  const btn=el("button","btn","Usar no BioEstat"); btn.type="button"; btn.addEventListener("click", usarMatrizNoBioensaio); box.appendChild(btn);
+
+  estudoSel.addEventListener("change", atualizarMatrizFiltros);
+  dataSel.addEventListener("change", atualizarMatrizFiltros);
+  varSel.addEventListener("change", atualizarMatrizPreview);
+  produto.addEventListener("change", atualizarMatrizPreview);
+  atualizarMatrizFiltros();
+}
+function colunasBioensaioDeMatriz(linhas, resposta, incluirProduto){
+  return [
+    {nome:"tratamento", valores:linhas.map(r=>(incluirProduto && r.produto) ? `${r.tratamento} - ${r.produto}` : r.tratamento)},
+    {nome:"bloco", valores:linhas.map(r=>r.repeticao || "1")},
+    {nome:resposta, valores:linhas.map(r=>String(r.valor))},
+    {nome:"produto", valores:linhas.map(r=>r.produto)},
+    {nome:"estudo", valores:linhas.map(r=>r.estudo)},
+    {nome:"data_avaliacao", valores:linhas.map(r=>r.data)}
+  ];
+}
+function usarMatrizNoBioensaio(){
+  const linhas=matrizLinhasFiltradas();
+  if(!linhas.length){ alert("Escolha um estudo/data/variável com valores numéricos."); return; }
+  const resposta=$("#matriz-variavel").value || "valor";
+  const incluirProduto=$("#matriz-produto") && $("#matriz-produto").checked;
+  const cols=colunasBioensaioDeMatriz(linhas, resposta, incluirProduto);
+  setModo("analise");
+  carregarColunas(cols, {resposta:resposta, fatores:["tratamento"], bloco:"bloco"});
+}
+const entradaMatriz=$("#entrada-matriz");
+if(entradaMatriz){
+  entradaMatriz.addEventListener("change", async (ev)=>{
+    const file=ev.target.files[0]; if(!file) return;
+    try{
+      const buf=await file.arrayBuffer();
+      const wb=XLSX.read(buf,{type:"array"});
+      const sheetName=wb.SheetNames.includes("Dados") ? "Dados" : wb.SheetNames[0];
+      const ws=wb.Sheets[sheetName];
+      const aoa=XLSX.utils.sheet_to_json(ws,{header:1, blankrows:false, defval:""});
+      const linhas=linhasMatrizDeAoa(aoa);
+      if(!linhas.length) throw new Error("A aba Dados foi encontrada, mas não há linhas com Tratamento, Variavel e Valor numérico.");
+      MATRIZ_IMPORT={arquivo:file.name, sheet:sheetName, linhas};
+      renderMatrizImportador();
+    }catch(e){
+      MATRIZ_IMPORT=null;
+      const box=$("#matriz-importador"); if(box){ box.innerHTML=""; box.classList.add("oculto"); }
+      alert("Não consegui importar a planilha do Matriz: " + e.message);
+    }
+  });
+}
+window.__bioensaioMatriz = { linhasMatrizDeAoa, matrizKey, colunasBioensaioDeMatriz, numBR, normCab };
 
 /* Exemplos (mode-aware) */
 function conjuntoExemplos(){ return MODO==="tempo" ? (window.EXEMPLOS_TEMPO||{}) : window.EXEMPLOS; }
@@ -430,16 +634,16 @@ function renderRelatorio(rel){
   }
   // Detecção
   const det=rel.deteccao;
-  out.appendChild(secao("🔎 Detecção",
+  out.appendChild(secao("Detecção",
     `<div>${chip(det.tipo_resposta,"chip-ok")} ${det.desenho.tem_dose?chip("dose-resposta","chip-info"):""} `+
     `${det.desenho.n_fatores?chip(det.desenho.n_fatores+" fator(es)","chip-info"):""} `+
     `${det.desenho.tem_bloco?chip("com bloco","chip-info"):""}</div>`+
     `<p class="dica">${det.detalhe_resposta||""}</p>`));
 
   if(rel.decisao) out.appendChild(htmlBloco(`<div class="decisao"><b>Decisão do app:</b> ${rel.decisao}</div>`));
-  (rel.avisos||[]).forEach(a=> out.appendChild(htmlBloco(`<div class="aviso">⚠️ ${a}</div>`)));
+  (rel.avisos||[]).forEach(a=> out.appendChild(htmlBloco(`<div class="aviso"><b>Aviso:</b> ${a}</div>`)));
 
-  if(rel.descritiva) out.appendChild(secao("📊 Estatística descritiva", tabelaDescritiva(rel.descritiva)));
+  if(rel.descritiva) out.appendChild(secao("Estatística descritiva", tabelaDescritiva(rel.descritiva)));
 
   const a = rel.analise || {};
   if(a.doses_letais || a.curvas) renderDose(out, a);
@@ -481,7 +685,7 @@ function renderDose(out, a){
   const uni = (document.getElementById('opt-unidade')?.value || "").trim();
   const sufUni = uni ? " " + uni : "";
   curvas.forEach(c=>{
-    const titulo = c.grupo && c.grupo!=="(único)" ? `🧪 Dose-resposta — ${c.grupo}` : "🧪 Dose-resposta";
+    const titulo = c.grupo && c.grupo!=="(único)" ? `Dose-resposta — ${c.grupo}` : "Dose-resposta";
     let h = `<div class="kv">`+
       `<dt>Modelo</dt><dd>${c.tipo_analise} ${chip("ligação: "+c.link,"chip-info")}</dd>`+
       `<dt>Inclinação (slope)</dt><dd>${fmt(c.slope,3)} ± ${fmt(c.slope_se,3)}</dd>`+
@@ -526,14 +730,14 @@ function renderComparacaoCurvas(out, comp, uni){
   h += `<div class="tab-rolavel"><table><thead><tr><th>Produto/Pop.</th><th>CL50${uni?" ("+uni+")":""}</th>`+
        `<th>Razão (RR)</th><th>IC95%</th></tr></thead><tbody>`;
   (comp.razoes||[]).forEach(r=>{
-    const sig = r.significativo && !r.referencia ? " ✱" : "";
+    const sig = r.significativo && !r.referencia ? " significativo" : "";
     const tag = r.referencia ? ` <span class="op-tag">ref</span>` : "";
     h += `<tr><td>${r.grupo}${tag}</td><td>${fmt(r.lc50,3)}${sufUni}</td>`+
          `<td><b>${fmt(r.rr,2)}×</b>${sig}</td>`+
          `<td>${r.referencia?"—":fmt(r.ic_inf,2)+" – "+fmt(r.ic_sup,2)}</td></tr>`;
   });
-  h += `</tbody></table></div><p class="dica">✱ = RR significativamente diferente de 1 (IC não inclui 1).</p>`;
-  out.appendChild(secao("⚖️ Comparação de potência / resistência", h));
+  h += `</tbody></table></div><p class="dica">Significativo = RR significativamente diferente de 1 (IC não inclui 1).</p>`;
+  out.appendChild(secao("Comparação de potência / resistência", h));
 }
 
 /* ---- ANOVA ---- */
@@ -545,11 +749,11 @@ function renderAnova(out, rel){
     (a.transformacao?chip("transformação: "+a.transformacao,"chip-info"):"")+
     (a.pressupostos_ok?chip("pressupostos OK","chip-ok"):chip("pressupostos violados","chip-alerta"))+
     `</div>`;
-  out.appendChild(secao("🧮 "+a.tipo_analise, diag));
+  out.appendChild(secao(a.tipo_analise, diag));
 
   let h=`<div class="tab-rolavel"><table><thead><tr><th>Fonte</th><th>GL</th><th>SQ</th><th>QM</th><th>F</th><th>p</th></tr></thead><tbody>`;
   a.tabela_anova.forEach(l=>{
-    h+=`<tr><td>${l.fonte}</td><td>${fmt(l.gl,0)}</td><td>${fmt(l.sq,2)}</td><td>${fmt(l.qm,2)}</td><td>${fmt(l.F,2)}</td><td>${l.p!=null?fmt(l.p,4):"—"} ${l.p!=null&&l.p<0.05?"✱":""}</td></tr>`;
+    h+=`<tr><td>${l.fonte}</td><td>${fmt(l.gl,0)}</td><td>${fmt(l.sq,2)}</td><td>${fmt(l.qm,2)}</td><td>${fmt(l.F,2)}</td><td>${l.p!=null?fmt(l.p,4):"—"} ${l.p!=null&&l.p<0.05?"significativo":""}</td></tr>`;
   });
   h+=`</tbody></table></div>`;
   if(a.kruskal) h+=`<p class="dica">Kruskal-Wallis (não-paramétrico): H=${fmt(a.kruskal.H,2)}, p=${fmt(a.kruskal.p,4)}.</p>`;
@@ -565,7 +769,7 @@ function renderGlm(out, a){
   const rotulo = a.proporcoes_estimadas ? "Proporção estimada" : "Média estimada";
   let head = `<div>${chip(a.familia,"chip-info")} ${a.sobredispersao?chip("φ="+fmt(a.sobredispersao.phi,2),(a.sobredispersao.sobredisperso?"chip-alerta":"chip-ok")):""}</div>`;
   if(a.nota_modelo) head += `<p class="dica">${a.nota_modelo}</p>`;
-  out.appendChild(secao("🧮 "+a.tipo_analise, head));
+  out.appendChild(secao(a.tipo_analise, head));
 
   let h=`<div class="tab-rolavel"><table><thead><tr><th>Tratamento</th><th>${rotulo}</th><th>Grupo</th></tr></thead><tbody>`;
   a.ordem.forEach(t=> h+=`<tr><td>${t}</td><td>${fmt(medias[t],3)}</td><td><span class="letra">${a.letras[t]||""}</span></td></tr>`);
@@ -586,7 +790,7 @@ function renderComparacoes(out, cm, descritiva){
     let h=`<div class="tab-rolavel"><table><thead><tr><th>Tratamento</th><th>${r.medianas?"Mediana":"Média"}</th>${r.medianas?"":"<th>± EP</th>"}<th>Grupo</th></tr></thead><tbody>`;
     ordem.forEach(t=> h+=`<tr><td>${t}</td><td>${fmt(valores[t],3)}</td>${r.medianas?"":`<td>${erros[t]!=null?"± "+fmt(erros[t],2):"—"}</td>`}<td><span class="letra">${r.letras[t]||""}</span></td></tr>`);
     h+=`</tbody></table></div><p class="dica">Mesma letra = não diferem (α=${r.alfa}).${r.medianas?"":" Barras = média ± erro-padrão."}</p>`;
-    const b=secao("🔤 "+r.metodo, h);
+    const b=secao(r.metodo, h);
     const cv=el("canvas"); cv.width=600; cv.height=300; b.appendChild(cv);
     out.appendChild(b);
     desenharBarras(cv, ordem, valores, r.letras, r.medianas?"Mediana":"Média", r.medianas?null:erros);
@@ -605,10 +809,10 @@ function renderRelatorioTempo(rel){
     $("#card-resultados").scrollIntoView({behavior:"smooth"}); return;
   }
   // Cabeçalho
-  out.appendChild(secao("⏱️ "+rel.tipo_analise,
+  out.appendChild(secao(rel.tipo_analise,
     `<div>${chip(rel.n_tratamentos+" tratamentos","chip-info")} ${chip(rel.tempos.length+" tempos","chip-info")} `+
     `${chip("controle: "+rel.controle,"chip-info")} ${chip("correção: "+rel.correcao,"chip-ok")}</div>`));
-  (rel.avisos||[]).forEach(a=> out.appendChild(htmlBloco(`<div class="aviso">⚠️ ${a}</div>`)));
+  (rel.avisos||[]).forEach(a=> out.appendChild(htmlBloco(`<div class="aviso"><b>Aviso:</b> ${a}</div>`)));
 
   // QA/QC
   const qa=rel.qa_qc||{};
@@ -619,29 +823,29 @@ function renderRelatorioTempo(rel){
     chip("vivos↑ no tempo: "+qa.monotonicidade, qa.monotonicidade?"chip-alerta":"chip-ok")+`</div>`;
   if((qa.controle||[]).length){
     qah+=`<div class="tab-rolavel"><table><thead><tr><th>Tempo</th><th>Mort. controle</th><th>Estabilidade</th><th>OK?</th></tr></thead><tbody>`;
-    qa.controle.forEach(c=> qah+=`<tr><td>${fmt(c.tempo,0)}</td><td>${fmt(c.mort_media,1)}%</td><td>${fmt(c.estabilidade,1)}%</td><td>${c.ok_mort&&c.ok_estab?"✓":"⚠️"}</td></tr>`);
+    qa.controle.forEach(c=> qah+=`<tr><td>${fmt(c.tempo,0)}</td><td>${fmt(c.mort_media,1)}%</td><td>${fmt(c.estabilidade,1)}%</td><td>${c.ok_mort&&c.ok_estab?"sim":"não"}</td></tr>`);
     qah+=`</tbody></table></div>`;
   }
-  out.appendChild(secao("🔎 QA/QC", qah));
+  out.appendChild(secao("QA/QC", qah));
 
   // Curva de mortalidade no tempo
   if((rel.tempos||[]).length>=2){
-    const bc=secao("📈 Mortalidade (%) ao longo do tempo","");
+    const bc=secao("Mortalidade (%) ao longo do tempo","");
     const cv=el("canvas"); cv.width=600; cv.height=300; bc.appendChild(cv);
     out.appendChild(bc);
     desenharLinhasTempo(cv, rel.letras_mortalidade, rel.tratamentos, "mortalidade (%)");
   }
 
   // Letras por tempo
-  out.appendChild(secao("🔤 Mortalidade (%) por tempo — letras",
+  out.appendChild(secao("Mortalidade (%) por tempo — letras",
     tabelaLetrasTempo(rel.letras_mortalidade, rel.tratamentos)));
   if((rel.letras_eficacia||[]).some(l=>Object.keys(l.medias||{}).length))
-    out.appendChild(secao("🔤 Eficácia (%) por tempo — letras",
+    out.appendChild(secao("Eficácia (%) por tempo — letras",
       tabelaLetrasTempo(rel.letras_eficacia, rel.tratamentos.filter(t=>t!==rel.controle))));
 
   // Rankings
   const rk=rel.rankings||{};
-  out.appendChild(secao("🏆 Rankings",
+  out.appendChild(secao("Rankings",
     `<div class="grid-rank">`+
     blocoRanking("Mortalidade — média no tempo", rk.mort_global, "%")+
     blocoRanking("Mortalidade — tempo final", rk.mort_final, "%")+
@@ -657,7 +861,7 @@ function renderRelatorioTempo(rel){
     if(km.logrank) kh+=`<p class="dica">Log-rank: χ²=${fmt(km.logrank.qui2,2)} (gl=${km.logrank.gl}), `+
       `${km.logrank.significativo?chip("p="+fmt(km.logrank.p,4)+" — diferem","chip-ok"):chip("p="+fmt(km.logrank.p,4)+" — não diferem","chip-info")}</p>`;
     kh+=`<p class="dica">LT50/LT90 = tempo para 50%/90% de mortalidade (interpolado; "—" = não atingido no período).</p>`;
-    const b=secao("📉 Kaplan-Meier (sobrevivência) + LT50/LT90", kh);
+    const b=secao("Kaplan-Meier (sobrevivência) + LT50/LT90", kh);
     const cv=el("canvas"); cv.width=600; cv.height=320; b.appendChild(cv);
     out.appendChild(b);
     desenharKM(cv, km.curvas, rel.tempos);
@@ -674,7 +878,7 @@ function renderRelatorioTempo(rel){
   if(mo.beta_eficacia && mo.beta_eficacia.convergiu){
     moh+= `<div class="kv"><dt>Beta-regressão (eficácia, tempo ${fmt(mo.beta_eficacia.tempo,0)})</dt><dd>efeito de tratamento ${p_chip(mo.beta_eficacia.p_tratamento)}</dd></div>`;
   }
-  if(moh) out.appendChild(secao("🧪 Modelos (inferência)", moh));
+  if(moh) out.appendChild(secao("Modelos (inferência)", moh));
 
   $("#card-resultados").scrollIntoView({behavior:"smooth"});
 }
@@ -826,5 +1030,5 @@ $("#btn-copiar").addEventListener("click", ()=>{
   navigator.clipboard.writeText($("#resultados").innerText).then(()=>alert("Relatório copiado."));
 });
 
-/* Service worker (offline) */
+/* Service worker */
 if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(()=>{}); }

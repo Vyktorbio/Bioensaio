@@ -140,7 +140,7 @@ h1,h2,.hero h1,.card h2{font-family:'Sora var','Inter var',sans-serif}
 </style>
 </head>
 <body>
-<div style="position:sticky;top:0;z-index:9999;display:flex;gap:6px;align-items:center;background:linear-gradient(135deg,#0f766e,#0e7490);padding:9px 12px;font-family:'Sora var','Inter var',-apple-system,system-ui,sans-serif;box-shadow:0 1px 4px rgba(15,23,42,.2);overflow-x:auto"><a href="../index.html" style="color:#fff;text-decoration:none;font-weight:800;font-size:15px;margin-right:auto;white-space:nowrap">BioEnsaio</a><a href="../index.html" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.12);white-space:nowrap">📊 Análise</a><a href="../index.html#tempo" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.12);white-space:nowrap">⏱️ Tempo</a><a href="calda.html" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.30);white-space:nowrap">🧪 Calda</a><a href="campo.html" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.12);white-space:nowrap">🚜 Campo</a></div>
+<div style="position:sticky;top:0;z-index:9999;display:flex;gap:6px;align-items:center;background:linear-gradient(135deg,#0f766e,#0e7490);padding:9px 12px;font-family:'Sora var','Inter var',-apple-system,system-ui,sans-serif;box-shadow:0 1px 4px rgba(15,23,42,.2);overflow-x:auto"><a href="../index.html" style="color:#fff;text-decoration:none;font-weight:800;font-size:15px;margin-right:auto;white-space:nowrap">BioEstat</a><a href="../index.html" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.12);white-space:nowrap">Análise</a><a href="../index.html#tempo" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.12);white-space:nowrap">Tempo</a><a href="calda.html" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.30);white-space:nowrap">Calda</a><a href="campo.html" style="color:#fff;text-decoration:none;font-size:13px;padding:6px 11px;border-radius:20px;background:rgba(255,255,255,.12);white-space:nowrap">Campo</a></div>
 
 
   <header class="wrap" style="padding-top:24px;padding-bottom:12px;">
@@ -239,14 +239,14 @@ function concToPpm(v,u,d){ d=d||1; if(u==="ppm")return v; if(u==="%")return v*10
 
 function pipetaAlerta(mL){
   const uL=mL*1000;
-  if(uL<0.5)return"⚠ VOLUME < 0,5 µL — abaixo do limite prático de micropipetas comuns.\n   Considere preparar uma solução-mãe intermediária para diluir.";
-  if(uL<1)return"⚠ VOLUME < 1 µL — zona de alto erro de pipetagem.\n   Recomenda-se uma diluição intermediária para maior precisão.";
-  if(uL<=10)return"⚠ Volume ≤ 10 µL — use micropipeta P10 calibrada para minimizar erro.";
+  if(uL<0.5)return"ALERTA: VOLUME < 0,5 µL — abaixo do limite prático de micropipetas comuns.\n   Considere preparar uma solução-mãe intermediária para diluir.";
+  if(uL<1)return"ALERTA: VOLUME < 1 µL — zona de alto erro de pipetagem.\n   Recomenda-se uma diluição intermediária para maior precisão.";
+  if(uL<=10)return"ALERTA: Volume ≤ 10 µL — use micropipeta P10 calibrada para minimizar erro.";
   return"";
 }
 function massaAlerta(mg){
-  if(mg<0.1)return"⚠ MASSA < 0,1 mg — abaixo da sensibilidade de muitas balanças analíticas.\n   Considere preparar uma solução-mãe concentrada e diluir.";
-  if(mg<1)return"⚠ Massa < 1 mg — use balança analítica de alta precisão (0,01 mg).";
+  if(mg<0.1)return"ALERTA: MASSA < 0,1 mg — abaixo da sensibilidade de muitas balanças analíticas.\n   Considere preparar uma solução-mãe concentrada e diluir.";
+  if(mg<1)return"ALERTA: Massa < 1 mg — use balança analítica de alta precisão (0,01 mg).";
   return"";
 }
 
@@ -481,7 +481,7 @@ function calcSerie(doses,vol_ml,tipo_fonte,valor_fonte,purezaPct,densidadeStr,in
       const vp=(ppm*vol_ml)/conc;const vs=vol_ml-vp;
       L.push(`  PIPETAR: ${fmt(vp)} mL do produto`);
       if(vp<1)L.push(`  (= ${fmt(vp*1000)} µL)`);
-      if(vs<0)L.push(`  ⚠ IMPOSSÍVEL: vol. produto > vol. final!`);
+      if(vs<0)L.push(`  ALERTA: IMPOSSÍVEL: vol. produto > vol. final!`);
       else L.push(`  Completar com solvente até ${fmt(vol_ml)} mL`);
       const a=pipetaAlerta(vp);if(a)alertas.push(`Dose ${fmt(ppm)} ppm: ${a.replace(/\n\s*/g," ")}`);
     }
@@ -604,7 +604,7 @@ $("#btn-campo").onclick=()=>{try{setOutput(calcCampo(parseOptNum($("#campo-dose"
 $("#btn-ia").onclick=()=>{try{setOutput(calcAjusteIA(parseOptNum($("#ia-origem-valor").value,0),$("#ia-origem-unid").value,parseOptNum($("#ia-alvo-valor").value,0),$("#ia-alvo-unid").value,parseOptNum($("#ia-vol-final").value,0),$("#ia-vol-unid").value,$("#ia-densidade").value));}catch(e){setOutput("ERRO: "+e.message);}};
 $("#btn-serie").onclick=()=>{try{let d;if(serieMode==="manual")d=parseListaDoses($("#serie-lista").value);else d=gerarSerieAuto(parseOptNum($("#serie-topo").value,0),parseOptNum($("#serie-fator").value,0),parseOptNum($("#serie-n").value,0));setOutput(calcSerie(d,parseOptNum($("#serie-vol").value,0),$("#serie-fonte-tipo").value,parseOptNum($("#serie-fonte-valor").value,0),$("#serie-pureza").value,$("#serie-densidade").value,serieTest));}catch(e){setOutput("ERRO: "+e.message);}};
 
-$("#btn-copy").onclick=async()=>{const b=$("#btn-copy");try{await navigator.clipboard.writeText($("#output").textContent);b.textContent="Copiado ✓";setTimeout(()=>{b.textContent="Copiar";},1500);}catch(e){}};
+$("#btn-copy").onclick=async()=>{const b=$("#btn-copy");try{await navigator.clipboard.writeText($("#output").textContent);b.textContent="Copiado";setTimeout(()=>{b.textContent="Copiar";},1500);}catch(e){}};
 $("#btn-pdf").onclick=()=>{const text=$("#output").textContent;const{jsPDF}=window.jspdf;const doc=new jsPDF({unit:"pt",format:"a4"});const m=40,w=doc.internal.pageSize.getWidth()-m*2,lh=13,ph=doc.internal.pageSize.getHeight()-m*2;const lines=doc.splitTextToSize(text,w);doc.setFont("courier","normal");doc.setFontSize(9);let y=m;for(const l of lines){if(y+lh>m+ph){doc.addPage();y=m;}doc.text(l,m,y);y+=lh;}doc.save("protocolo_calda.pdf");};
 
 // Init

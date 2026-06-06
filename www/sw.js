@@ -1,10 +1,9 @@
-/* Service worker — cache do app para uso offline.
-   App shell + bioengine ficam em cache. As bibliotecas do Pyodide (CDN)
-   são cacheadas sob demanda na primeira execução com internet; depois o
-   app abre offline. Na versão APK os arquivos do Pyodide são embutidos. */
-const CACHE = "bioensaio-v1";
+/* Service worker - cache local do app.
+   App shell + bioengine ficam em cache. As bibliotecas do Pyodide são
+   cacheadas sob demanda; na versão APK esses arquivos já vêm embutidos. */
+const CACHE = "bioestat-v5-clean-ui";
 const SHELL = [
-  "./", "./index.html", "./styles.css", "./app.js", "./exemplos.js",
+  "./", "./index.html", "./styles.css?v=bioestat-clean-2", "./app.js?v=bioestat-clean-2", "./exemplos.js",
   "./manifest.webmanifest",
   "./calc/calda.html", "./calc/campo.html",
   "./lib/xlsx.full.min.js", "./lib/jspdf.umd.min.js",
@@ -23,6 +22,21 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
+  const path = new URL(req.url).pathname;
+  const interfaceFresh = req.mode === "navigate" ||
+    /\/(index\.html|app\.js|styles\.css|exemplos\.js|manifest\.webmanifest|sw\.js)$/.test(path);
+  if (interfaceFresh) {
+    e.respondWith(
+      fetch(req).then(resp => {
+        if (resp && resp.status === 200) {
+          const copia = resp.clone();
+          caches.open(CACHE).then(c => c.put(req, copia));
+        }
+        return resp;
+      }).catch(() => caches.match(req))
+    );
+    return;
+  }
   // estratégia: cache-first com atualização em segundo plano (stale-while-revalidate)
   e.respondWith(
     caches.match(req).then(cached => {
