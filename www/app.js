@@ -102,6 +102,59 @@ function setOverlay(msg, sub){ $("#overlay-msg").textContent=msg; if(sub!=null)$
 function esconderOverlay(){ $("#overlay").classList.add("oculto"); }
 
 /* ----------------------------------------------------------------------- */
+/* Navegação principal                                                     */
+/* ----------------------------------------------------------------------- */
+function navItem(nome){ return document.querySelector(`.appnav-item[data-nav="${nome}"]`); }
+function setNavAtivo(nome){
+  document.querySelectorAll(".appnav-item").forEach(a=>a.classList.toggle("ativo", a.dataset.nav===nome));
+}
+function setNavTravado(nome, travado){
+  const item=navItem(nome); if(!item) return;
+  item.classList.toggle("travado", !!travado);
+  item.setAttribute("aria-disabled", travado ? "true" : "false");
+}
+function atualizarNav(){
+  const temDados = COLUNAS.length > 0;
+  const temResultados = !$("#card-resultados").classList.contains("oculto") && $("#resultados").children.length > 0;
+  setNavTravado("papeis", !temDados);
+  setNavTravado("resultados", !temResultados);
+}
+function irPara(secao){
+  if(secao==="dados"){
+    setNavAtivo("dados");
+    $("#card-dados").scrollIntoView({behavior:"smooth", block:"start"});
+    return;
+  }
+  if(secao==="papeis"){
+    if(!COLUNAS.length){ setNavAtivo("dados"); $("#card-dados").scrollIntoView({behavior:"smooth", block:"start"}); return; }
+    setNavAtivo("papeis");
+    $("#card-papeis").scrollIntoView({behavior:"smooth", block:"start"});
+    return;
+  }
+  if(secao==="geral" || secao==="tempo"){
+    setModo(secao==="tempo" ? "tempo" : "analise");
+    setNavAtivo(secao);
+    const alvo = secao==="tempo" ? $("#card-opcoes-tempo") : $("#card-opcoes");
+    (COLUNAS.length ? alvo : $("#card-dados")).scrollIntoView({behavior:"smooth", block:"start"});
+    return;
+  }
+  if(secao==="resultados"){
+    if($("#card-resultados").classList.contains("oculto")) return;
+    setNavAtivo("resultados");
+    $("#card-resultados").scrollIntoView({behavior:"smooth", block:"start"});
+  }
+}
+document.querySelectorAll(".appnav-item").forEach(a=>a.addEventListener("click", e=>{
+  e.preventDefault();
+  if(a.classList.contains("travado")){
+    if(a.dataset.nav==="resultados" && COLUNAS.length){ irPara(MODO==="tempo" ? "tempo" : "geral"); return; }
+    irPara("dados");
+    return;
+  }
+  irPara(a.dataset.nav);
+}));
+
+/* ----------------------------------------------------------------------- */
 /* Tabs                                                                    */
 /* ----------------------------------------------------------------------- */
 document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
@@ -122,12 +175,15 @@ function setModo(m){
   $("#card-opcoes-tempo").classList.toggle("oculto", m!=="tempo");
   // ajusta dica de exemplos por modo
   $("#card-resultados").classList.add("oculto");
+  setNavTravado("resultados", true);
   if(COLUNAS.length){ renderPapeis(MODO==="tempo"?adivinharPapeisTempo():adivinharPapeis()); }
   preencherExemplosPorModo();
+  if(navItem("geral")) setNavAtivo(m==="tempo" ? "tempo" : "geral");
 }
 document.querySelectorAll(".analysis-mode[data-modo]").forEach(a=>
   a.addEventListener("click", (e)=>{ e.preventDefault(); setModo(a.dataset.modo); }));
 if(location.hash==="#tempo") setModo("tempo");
+atualizarNav();
 
 /* ----------------------------------------------------------------------- */
 /* Parsing                                                                 */
@@ -462,8 +518,11 @@ function carregarColunas(cols, papeisForcados){
   $("#card-opcoes").classList.toggle("oculto", MODO!=="analise");
   $("#card-opcoes-tempo").classList.toggle("oculto", MODO!=="tempo");
   $("#card-resultados").classList.add("oculto");
+  setNavTravado("resultados", true);
   $(".acao-fixa").classList.remove("oculto");
   $("#btn-analisar").disabled = false;
+  atualizarNav();
+  setNavAtivo("papeis");
   garantirPyodide().catch(e=>console.error(e));
   $("#card-papeis").scrollIntoView({behavior:"smooth", block:"start"});
 }
@@ -629,6 +688,8 @@ function p_chip(p){ if(p==null) return ""; const sig=p<0.05; return `<span class
 function renderRelatorio(rel){
   const out=$("#resultados"); out.innerHTML="";
   $("#card-resultados").classList.remove("oculto");
+  setNavTravado("resultados", false);
+  setNavAtivo("resultados");
   if(!rel.ok){
     out.appendChild(htmlBloco(`<div class="erro-box"><b>Não foi possível analisar.</b><br>${rel.erro||""}</div>`));
     if(rel.trace) out.appendChild(htmlBloco(`<pre style="font-size:11px;overflow:auto">${rel.trace}</pre>`));
@@ -805,6 +866,8 @@ function renderComparacoes(out, cm, descritiva){
 function renderRelatorioTempo(rel){
   const out=$("#resultados"); out.innerHTML="";
   $("#card-resultados").classList.remove("oculto");
+  setNavTravado("resultados", false);
+  setNavAtivo("resultados");
   if(!rel.ok){
     out.appendChild(htmlBloco(`<div class="erro-box"><b>Não foi possível analisar.</b><br>${rel.erro||""}</div>`));
     if(rel.trace) out.appendChild(htmlBloco(`<pre style="font-size:11px;overflow:auto">${rel.trace}</pre>`));

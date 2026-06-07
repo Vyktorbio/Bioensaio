@@ -1,9 +1,9 @@
 /* Service worker - cache local do app.
    App shell + bioengine ficam em cache. As bibliotecas do Pyodide são
    cacheadas sob demanda; na versão APK esses arquivos já vêm embutidos. */
-const CACHE = "bioestat-v10-estatistica-only";
+const CACHE = "bioestat-v12-stat-menus";
 const SHELL = [
-  "./", "./index.html", "./styles.css?v=bioestat-estatistica-1", "./app.js?v=bioestat-estatistica-1", "./exemplos.js",
+  "./", "./index.html", "./styles.css?v=bioestat-menus-2", "./app.js?v=bioestat-menus-2", "./exemplos.js",
   "./manifest.webmanifest",
   "./lib/xlsx.full.min.js",
   "./bioengine/__init__.py", "./bioengine/detect.py", "./bioengine/diagnostics.py",

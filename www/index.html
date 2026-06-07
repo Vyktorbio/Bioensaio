@@ -7,9 +7,17 @@
 <title>BioEstat</title>
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icons/icon-180.png" />
-<link rel="stylesheet" href="styles.css?v=bioestat-estatistica-1" />
+<link rel="stylesheet" href="styles.css?v=bioestat-menus-2" />
 </head>
 <body>
+<nav class="appnav" aria-label="Menu principal">
+  <a class="appnav-item ativo" href="#card-dados" data-nav="dados">Dados</a>
+  <a class="appnav-item travado" href="#card-papeis" data-nav="papeis" aria-disabled="true">Papéis</a>
+  <a class="appnav-item" href="#card-opcoes" data-nav="geral">Geral</a>
+  <a class="appnav-item" href="#card-opcoes-tempo" data-nav="tempo">Tempo</a>
+  <a class="appnav-item travado" href="#card-resultados" data-nav="resultados" aria-disabled="true">Resultados</a>
+</nav>
+
 <main>
   <!-- 1. DADOS -->
   <section class="card" id="card-dados">
@@ -176,6 +184,6 @@
 <script src="lib/xlsx.full.min.js"></script>
 <script src="pyodide/pyodide.js"></script>
 <script src="exemplos.js"></script>
-<script src="app.js?v=bioestat-estatistica-1"></script>
+<script src="app.js?v=bioestat-menus-2"></script>
 </body>
 </html>
