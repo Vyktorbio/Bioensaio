@@ -7,27 +7,9 @@
 <title>BioEstat</title>
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icons/icon-180.png" />
-<link rel="stylesheet" href="styles.css?v=bioestat-clean-2" />
+<link rel="stylesheet" href="styles.css?v=bioestat-estatistica-1" />
 </head>
 <body>
-<header class="topo">
-  <div class="topo-inner">
-    <div class="logo">
-      <span class="logo-mark">BE</span>
-    </div>
-    <div>
-      <h1>BioEstat</h1>
-    </div>
-  </div>
-</header>
-
-<nav class="appnav">
-  <a class="appnav-item ativo" href="#" data-modo="analise">Análise</a>
-  <a class="appnav-item" href="#" data-modo="tempo">Tempo</a>
-  <a class="appnav-item" href="calc/calda.html">Calda</a>
-  <a class="appnav-item" href="calc/campo.html">Campo</a>
-</nav>
-
 <main>
   <!-- 1. DADOS -->
   <section class="card" id="card-dados">
@@ -77,6 +59,7 @@
   </section>
 
   <!-- 2. PAPÉIS -->
+  <div id="analise-area"></div>
   <section class="card oculto" id="card-papeis">
     <h2><span class="num">2</span> Papéis das colunas</h2>
     <p class="dica">O app já tentou adivinhar. Ajuste se precisar.</p>
@@ -85,7 +68,11 @@
 
   <!-- 3. OPÇÕES -->
   <section class="card oculto" id="card-opcoes">
-    <h2><span class="num">3</span> Opções</h2>
+    <h2><span class="num">3</span> Análise</h2>
+    <div class="analysis-switch" role="tablist" aria-label="Tipo de análise">
+      <button class="analysis-mode ativo" type="button" data-modo="analise">Geral</button>
+      <button class="analysis-mode" type="button" data-modo="tempo">Tempo</button>
+    </div>
     <div class="opcoes-grid">
       <label>Nível de significância (α)
         <select id="opt-alfa">
@@ -131,7 +118,11 @@
 
   <!-- 3T. OPÇÕES — MORTALIDADE NO TEMPO -->
   <section class="card oculto" id="card-opcoes-tempo">
-    <h2><span class="num">3</span> Opções (tempo)</h2>
+    <h2><span class="num">3</span> Análise</h2>
+    <div class="analysis-switch" role="tablist" aria-label="Tipo de análise">
+      <button class="analysis-mode" type="button" data-modo="analise">Geral</button>
+      <button class="analysis-mode ativo" type="button" data-modo="tempo">Tempo</button>
+    </div>
     <div class="opcoes-grid">
       <label>Controle negativo
         <select id="opt-controle-neg"><option value="">(1º tratamento)</option></select>
@@ -156,7 +147,7 @@
     </div>
   </section>
 
-  <div class="acao-fixa">
+  <div class="acao-fixa oculto">
     <button class="btn-principal" id="btn-analisar" disabled>Analisar</button>
   </div>
 
@@ -171,6 +162,8 @@
   </section>
 </main>
 
+<footer class="brand-footer">BioEstat</footer>
+
 <!-- Overlay de carregamento do motor -->
 <div id="overlay" class="overlay oculto">
   <div class="overlay-box">
@@ -183,6 +176,6 @@
 <script src="lib/xlsx.full.min.js"></script>
 <script src="pyodide/pyodide.js"></script>
 <script src="exemplos.js"></script>
-<script src="app.js?v=bioestat-clean-2"></script>
+<script src="app.js?v=bioestat-estatistica-1"></script>
 </body>
 </html>

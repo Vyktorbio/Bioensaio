@@ -67,15 +67,11 @@ Detecção e justificativa da decisão, estatística descritiva (média, DP, EP,
 diagnósticos, tabela da ANOVA / parâmetros do GLM, doses letais, letras de comparação e
 gráficos. Exporta por **Imprimir → PDF** e **Copiar relatório**.
 
-### Calculadoras de laboratório e campo (acessíveis pela barra do topo)
-- **Calculadora de Calda** (`www/calc/calda.html`): preparo em **ppm** (rótulo g/L, g/kg,
-  solução-mãe, pó puro; modos direto e inverso), **conversão campo → bancada**, **ajuste de
-  i.a.** e **série de doses** (lista ou série geométrica), com alertas de pipetagem/balança e
-  exportação em PDF.
-- **Calculadora Campo** (`www/calc/campo.html`): **calda por parcela e por garrafa** (volume
-  morto, capacidade da garrafa, produto/água por garrafa) e **velocidade de passada** a partir
-  da vazão dos bicos, com **CV%** de uniformidade e tempo de passada; salva e copia tratamentos.
-- Unidades suportadas no laboratório: ppm, %, L/ha, mL/ha, kg/ha, g/ha, g/L, mg/mL, g/kg, % v/v…
+### Calculadoras em projeto separado
+As calculadoras de laboratório e campo foram separadas do BioEnsaio. Elas agora ficam no
+repositório **BioCalculo**:
+
+https://github.com/Vyktorbio/BioCalculo
 
 ---
 

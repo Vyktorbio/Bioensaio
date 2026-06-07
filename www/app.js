@@ -116,7 +116,7 @@ document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () =>
 /* ----------------------------------------------------------------------- */
 function setModo(m){
   MODO = m;
-  document.querySelectorAll(".appnav-item[data-modo]").forEach(a=>
+  document.querySelectorAll(".analysis-mode[data-modo]").forEach(a=>
     a.classList.toggle("ativo", a.dataset.modo===m));
   $("#card-opcoes").classList.toggle("oculto", m!=="analise");
   $("#card-opcoes-tempo").classList.toggle("oculto", m!=="tempo");
@@ -125,8 +125,9 @@ function setModo(m){
   if(COLUNAS.length){ renderPapeis(MODO==="tempo"?adivinharPapeisTempo():adivinharPapeis()); }
   preencherExemplosPorModo();
 }
-document.querySelectorAll(".appnav-item[data-modo]").forEach(a=>
+document.querySelectorAll(".analysis-mode[data-modo]").forEach(a=>
   a.addEventListener("click", (e)=>{ e.preventDefault(); setModo(a.dataset.modo); }));
+if(location.hash==="#tempo") setModo("tempo");
 
 /* ----------------------------------------------------------------------- */
 /* Parsing                                                                 */
@@ -461,6 +462,7 @@ function carregarColunas(cols, papeisForcados){
   $("#card-opcoes").classList.toggle("oculto", MODO!=="analise");
   $("#card-opcoes-tempo").classList.toggle("oculto", MODO!=="tempo");
   $("#card-resultados").classList.add("oculto");
+  $(".acao-fixa").classList.remove("oculto");
   $("#btn-analisar").disabled = false;
   garantirPyodide().catch(e=>console.error(e));
   $("#card-papeis").scrollIntoView({behavior:"smooth", block:"start"});
