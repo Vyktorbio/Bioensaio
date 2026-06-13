@@ -110,8 +110,9 @@ def glm_proporcao(y, n, fator, alfa=0.05):
     design_info = X.design_info
     modelo = sm.GLM(endog, X, family=sm.families.Binomial()).fit()
 
+    mu_prop = np.asarray(modelo.predict(X), dtype=float)
     over = diag.sobredispersao_binomial(df["y"].values, df["n"].values,
-                                        modelo.fittedvalues.values, len(modelo.params))
+                                        mu_prop, len(modelo.params))
     dispersao = over["phi"] if over["sobredisperso"] else 1.0
     familia = "Binomial" + (" (escala quase-binomial)" if over["sobredisperso"] else "")
     nota = (f"sobredispersão (φ={over['phi']:.2f}); erros-padrão corrigidos por escala"

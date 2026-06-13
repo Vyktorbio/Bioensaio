@@ -54,6 +54,21 @@ let MATRIZ_IMPORT = null;     // linhas normalizadas da planilha exportada pelo 
 
 const $ = (s) => document.querySelector(s);
 const el = (t, c, txt) => { const e=document.createElement(t); if(c)e.className=c; if(txt!=null)e.textContent=txt; return e; };
+let toastTimer = null;
+
+function esc(v){
+  return String(v == null ? "" : v).replace(/[&<>"']/g, ch => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+  }[ch]));
+}
+function avisar(msg, tipo="erro"){
+  const box = $("#toast");
+  if(!box) return;
+  clearTimeout(toastTimer);
+  box.textContent = msg;
+  box.className = "toast " + (tipo === "ok" ? "toast-ok" : "toast-erro");
+  toastTimer = setTimeout(()=>box.classList.add("oculto"), 4200);
+}
 
 /* ----------------------------------------------------------------------- */
 /* Inicialização do Pyodide + motor                                        */
@@ -173,11 +188,11 @@ function setModo(m){
     a.classList.toggle("ativo", a.dataset.modo===m));
   $("#card-opcoes").classList.toggle("oculto", m!=="analise");
   $("#card-opcoes-tempo").classList.toggle("oculto", m!=="tempo");
-  // ajusta dica de exemplos por modo
   $("#card-resultados").classList.add("oculto");
   setNavTravado("resultados", true);
   if(COLUNAS.length){ renderPapeis(MODO==="tempo"?adivinharPapeisTempo():adivinharPapeis()); }
   preencherExemplosPorModo();
+  atualizarPipeline();
   if(navItem("geral")) setNavAtivo(m==="tempo" ? "tempo" : "geral");
 }
 document.querySelectorAll(".analysis-mode[data-modo]").forEach(a=>
@@ -210,7 +225,7 @@ function matrizParaColunas(matriz){
 /* Colar */
 $("#btn-colar").addEventListener("click", () => {
   try { carregarColunas(matrizParaColunas(parseTexto($("#entrada-colar").value))); }
-  catch(e){ alert("Não consegui ler: " + e.message); }
+  catch(e){ avisar("Não consegui ler: " + e.message); }
 });
 
 /* Arquivo */
@@ -223,7 +238,7 @@ $("#entrada-arquivo").addEventListener("change", async (ev) => {
     const aoa = XLSX.utils.sheet_to_json(ws, {header:1, blankrows:false, defval:""});
     if (!aoa.length) throw new Error("planilha vazia");
     carregarColunas(matrizParaColunas(aoa.map(r=>r.map(c=>c===null?"":String(c)))));
-  } catch(e){ alert("Erro ao ler arquivo: " + e.message); }
+  } catch(e){ avisar("Erro ao ler arquivo: " + e.message); }
 });
 
 /* Importar planilha exportada pelo Matriz */
@@ -379,7 +394,7 @@ function renderMatrizImportador(){
   box.appendChild(grid);
 
   const preview=el("div","matriz-preview"); preview.id="matriz-preview"; box.appendChild(preview);
-  const btn=el("button","btn","Usar no BioEstat"); btn.type="button"; btn.addEventListener("click", usarMatrizNoBioensaio); box.appendChild(btn);
+  const btn=el("button","btn","Usar no BioEnsaio"); btn.type="button"; btn.addEventListener("click", usarMatrizNoBioensaio); box.appendChild(btn);
 
   estudoSel.addEventListener("change", atualizarMatrizFiltros);
   dataSel.addEventListener("change", atualizarMatrizFiltros);
@@ -399,7 +414,7 @@ function colunasBioensaioDeMatriz(linhas, resposta, incluirProduto){
 }
 function usarMatrizNoBioensaio(){
   const linhas=matrizLinhasFiltradas();
-  if(!linhas.length){ alert("Escolha um estudo/data/variável com valores numéricos."); return; }
+  if(!linhas.length){ avisar("Escolha um estudo/data/variável com valores numéricos."); return; }
   const resposta=$("#matriz-variavel").value || "valor";
   const incluirProduto=$("#matriz-produto") && $("#matriz-produto").checked;
   const cols=colunasBioensaioDeMatriz(linhas, resposta, incluirProduto);
@@ -423,7 +438,7 @@ if(entradaMatriz){
     }catch(e){
       MATRIZ_IMPORT=null;
       const box=$("#matriz-importador"); if(box){ box.innerHTML=""; box.classList.add("oculto"); }
-      alert("Não consegui importar a planilha do Matriz: " + e.message);
+      avisar("Não consegui importar a planilha do Matriz: " + e.message);
     }
   });
 }
@@ -472,7 +487,7 @@ $("#btn-digitar").addEventListener("click", ()=>{
   const headers=[...tab.querySelectorAll("thead input")].map(i=>i.value.trim()||"col");
   const linhas=[...tab.querySelectorAll("tbody tr")].map(tr=>[...tr.querySelectorAll("input")].map(i=>i.value.trim()));
   const validas=linhas.filter(l=>l.some(c=>c!==""));
-  if(!validas.length){ alert("Preencha ao menos uma linha."); return; }
+  if(!validas.length){ avisar("Preencha ao menos uma linha."); return; }
   carregarColunas(headers.map((nome,i)=>({nome, valores: validas.map(l=>l[i]||"")})));
 });
 
@@ -521,6 +536,7 @@ function carregarColunas(cols, papeisForcados){
   setNavTravado("resultados", true);
   $(".acao-fixa").classList.remove("oculto");
   $("#btn-analisar").disabled = false;
+  atualizarPipeline();
   atualizarNav();
   setNavAtivo("papeis");
   garantirPyodide().catch(e=>console.error(e));
@@ -567,7 +583,12 @@ function renderPapeis(papeis){
     item.appendChild(el("span","papel-nome",col.nome));
     const sel=el("select"); sel.dataset.coluna=col.nome;
     opcoes.forEach(([v,t])=>{ const o=el("option"); o.value=v; o.textContent=t; if(papeis[col.nome]===v)o.selected=true; sel.appendChild(o); });
-    if(MODO==="tempo") sel.addEventListener("change", popularControleNeg);
+    sel.addEventListener("change", ()=>{
+      if(MODO==="tempo") popularControleNeg();
+      $("#card-resultados").classList.add("oculto");
+      setNavTravado("resultados", true);
+      atualizarPipeline();
+    });
     item.appendChild(sel); lista.appendChild(item);
   });
   if(MODO==="tempo") popularControleNeg();
@@ -632,6 +653,328 @@ function lerPapeisTempo(){
 }
 
 /* ----------------------------------------------------------------------- */
+/* Pipeline guiado + QA/QC                                                 */
+/* ----------------------------------------------------------------------- */
+function papelSelecoesAtuais(){
+  const porColuna={}, porPapel={};
+  document.querySelectorAll("#papeis-lista select").forEach(sel=>{
+    const col=sel.dataset.coluna, papel=sel.value;
+    porColuna[col]=papel;
+    if(papel!=="ignorar"){
+      if(!porPapel[papel]) porPapel[papel]=[];
+      porPapel[papel].push(col);
+    }
+  });
+  return {porColuna, porPapel};
+}
+function colunaPorNome(nome){ return COLUNAS.find(c=>c.nome===nome); }
+function valoresColuna(nome){ return (colunaPorNome(nome)||{}).valores || []; }
+function linhasAtuais(){
+  const n=COLUNAS[0]?.valores.length || 0;
+  return Array.from({length:n}, (_,i)=>{
+    const row={};
+    COLUNAS.forEach(c=>row[c.nome]=c.valores[i] ?? "");
+    return row;
+  });
+}
+function textoValor(v){ return String(v==null?"":v).trim(); }
+function valoresValidos(arr){ return arr.map(textoValor).filter(v=>v!==""); }
+function nUnicos(arr){ return new Set(valoresValidos(arr)).size; }
+function taxaNumerica(arr){
+  const vals=valoresValidos(arr);
+  if(!vals.length) return {total:0, ok:0, taxa:0};
+  const ok=vals.filter(v=>Number.isFinite(numBR(v))).length;
+  return {total:vals.length, ok, taxa:ok/vals.length};
+}
+function numsColuna(nome){ return valoresColuna(nome).map(v=>numBR(v)); }
+function pushCheck(checks, severidade, titulo, detalhe, bloqueia=false){
+  checks.push({severidade, titulo, detalhe, bloqueia: !!bloqueia});
+}
+function nomeControleProvavel(v){
+  return /controle|testemunha|control|check|sem\s*trat|negativo/i.test(String(v||""));
+}
+function inferirTipoResposta(papeis){
+  if(papeis.tipo_resposta) return papeis.tipo_resposta;
+  if(papeis.n_total) return "binomial";
+  const resp=valoresValidos(valoresColuna(papeis.resposta));
+  if(!resp.length) return "";
+  const norm=resp.map(v=>v.toLowerCase());
+  const palavrasBinarias=norm.every(v=>/^(sim|s|yes|y|true|1|nao|não|n|no|false|0|vivo|morto|germinou|nao germinou|não germinou)$/.test(v));
+  if(palavrasBinarias) return "binario";
+  const nums=resp.map(v=>numBR(v));
+  const numericos=nums.filter(Number.isFinite);
+  if(numericos.length/resp.length < .7) return "continua";
+  const inteiros=numericos.every(v=>Number.isInteger(v) && v>=0);
+  const nome=(papeis.resposta||"").toLowerCase();
+  if(inteiros && /mort|vivo|afet|evento|germin|doente|colon|cont|n[ºo]?/i.test(nome)) return "contagem";
+  if(numericos.every(v=>v>=0 && v<=100) && /sev|incid|porc|percent|%|efic|mortal/i.test(nome)) return "proporcao";
+  return "continua";
+}
+function rotaGeral(papeis, tipo){
+  const temDose=!!papeis.dose;
+  const fatores=(papeis.fatores||[]).length;
+  if(temDose && ["binario","binomial"].includes(tipo)){
+    return {
+      titulo:"Dose-resposta",
+      descricao:"Ajustar curva logit/probit, estimar CL/DL e avaliar aderência/heterogeneidade.",
+      chips:["curva","CL/DL","Abbott se informado"]
+    };
+  }
+  if(temDose && !["binario","binomial"].includes(tipo)){
+    return {
+      titulo:"Dose como tratamento",
+      descricao:"Resposta não-binomial com coluna de dose; comparar níveis de dose como tratamentos ou avançar para regressão.",
+      chips:["dose","comparação"]
+    };
+  }
+  if(tipo==="binomial" && fatores){
+    return {titulo:"GLM binomial", descricao:"Comparar proporções x de n por tratamento, com letras por contrastes.", chips:["x de n","logístico"]};
+  }
+  if(tipo==="binario" && fatores){
+    return {titulo:"GLM binomial agregado", descricao:"Agregar eventos individuais por tratamento e comparar proporções.", chips:["binário","agregação"]};
+  }
+  if(tipo==="contagem" && fatores){
+    return {titulo:"GLM de contagem", descricao:"Usar Poisson e trocar para binomial negativa se houver sobredispersão.", chips:["Poisson","sobredispersão"]};
+  }
+  if(["continua","proporcao"].includes(tipo) && fatores){
+    return {titulo:"ANOVA + pós-teste", descricao:"Checar pressupostos, transformar se necessário e comparar médias.", chips:["ANOVA","Tukey/Scott-Knott"]};
+  }
+  return {titulo:"Descritiva", descricao:"Sem fator/tratamento suficiente; apresentar estatística descritiva e normalidade.", chips:["resumo"]};
+}
+function checarDuplicatasGerais(checks){
+  const rows=linhasAtuais();
+  const vistos=new Set();
+  let duplicatas=0;
+  rows.forEach(r=>{
+    const key=COLUNAS.map(c=>textoValor(r[c.nome])).join("||");
+    if(vistos.has(key)) duplicatas++;
+    else vistos.add(key);
+  });
+  if(duplicatas) pushCheck(checks,"aviso","Linhas duplicadas",`${duplicatas} linha(s) idêntica(s) no arquivo. Confira se não é lançamento repetido.`);
+  else pushCheck(checks,"ok","Duplicatas exatas","Nenhuma linha idêntica encontrada.");
+}
+function avaliarPipelineGeral(){
+  const checks=[];
+  const sel=papelSelecoesAtuais();
+  const papeis=lerPapeis();
+  const nLin=COLUNAS[0]?.valores.length || 0;
+  pushCheck(checks,"ok","Dados carregados",`${nLin} linha(s) e ${COLUNAS.length} coluna(s).`);
+
+  ["resposta","dose","bloco","n_total"].forEach(p=>{
+    if((sel.porPapel[p]||[]).length>1) pushCheck(checks,"critico","Papéis conflitantes",`Mais de uma coluna marcada como ${p}: ${sel.porPapel[p].join(", ")}.`, true);
+  });
+  if(!papeis.resposta) pushCheck(checks,"critico","Resposta ausente","Marque uma coluna como Resposta.", true);
+
+  const tipo=papeis.resposta ? inferirTipoResposta(papeis) : "";
+  const rota=rotaGeral(papeis, tipo);
+
+  if(papeis.resposta){
+    const resp=valoresColuna(papeis.resposta);
+    const faltantes=resp.filter(v=>textoValor(v)==="").length;
+    if(faltantes) pushCheck(checks,"aviso","Resposta com vazios",`${faltantes} linha(s) sem valor de resposta.`);
+    const taxa=taxaNumerica(resp);
+    if(!["binario"].includes(tipo) && taxa.total && taxa.taxa<.9){
+      pushCheck(checks,"critico","Resposta não-numérica",`Apenas ${taxa.ok}/${taxa.total} valores da resposta são numéricos.`, true);
+    } else {
+      pushCheck(checks,"ok","Resposta compatível",`Tipo inferido: ${tipo || "a confirmar"}.`);
+    }
+  }
+
+  if(papeis.n_total){
+    const y=numsColuna(papeis.resposta), n=numsColuna(papeis.n_total);
+    let invalidos=0, impossiveis=0;
+    n.forEach((nn,i)=>{
+      if(!Number.isFinite(nn) || nn<=0 || !Number.isFinite(y[i])) invalidos++;
+      else if(y[i]<0 || y[i]>nn) impossiveis++;
+    });
+    if(invalidos) pushCheck(checks,"critico","Binomial incompleto",`${invalidos} linha(s) com resposta ou n total inválidos.`, true);
+    if(impossiveis) pushCheck(checks,"critico","Eventos impossíveis",`${impossiveis} linha(s) com eventos < 0 ou eventos > n total.`, true);
+    if(!invalidos && !impossiveis) pushCheck(checks,"ok","x de n válido","Eventos e totais passam na checagem básica.");
+  }
+
+  if(papeis.dose){
+    const dose=numsColuna(papeis.dose);
+    const invalidas=dose.filter(v=>!Number.isFinite(v)).length;
+    const positivas=[...new Set(dose.filter(v=>Number.isFinite(v) && v>0).map(v=>String(v)))];
+    if(invalidas) pushCheck(checks,"critico","Dose não-numérica",`${invalidas} linha(s) com dose inválida.`, true);
+    else pushCheck(checks,"ok","Dose numérica",`${positivas.length} nível(is) positivo(s) de dose.`);
+    if(["binario","binomial"].includes(tipo) && positivas.length<3){
+      pushCheck(checks,"critico","Poucos níveis de dose","Dose-resposta precisa de pelo menos 3 doses positivas para estimar curva com segurança.", true);
+    }
+  }
+
+  const fatores=papeis.fatores||[];
+  if(fatores.length){
+    const chave=fatores.map(f=>valoresColuna(f));
+    const grupos=new Map();
+    for(let i=0;i<nLin;i++){
+      const g=fatores.map((f,j)=>textoValor(chave[j][i])).join(" / ");
+      if(!g.trim()) continue;
+      grupos.set(g,(grupos.get(g)||0)+1);
+    }
+    if(grupos.size<2 && !papeis.dose) pushCheck(checks,"critico","Poucos tratamentos","É preciso ao menos 2 tratamentos/grupos para comparação.", true);
+    else pushCheck(checks,"ok","Tratamentos detectados",`${grupos.size} tratamento(s)/grupo(s).`);
+    const poucos=[...grupos.entries()].filter(([,n])=>n<2).map(([g])=>g);
+    if(poucos.length) pushCheck(checks,"aviso","Repetição baixa",`${poucos.slice(0,4).join(", ")}${poucos.length>4?"...":""} com menos de 2 repetição(ões).`);
+  } else if(!papeis.dose){
+    pushCheck(checks,"aviso","Sem fator/tratamento","A rota ficará limitada a descritiva se nenhum fator for marcado.");
+  }
+
+  if(papeis.bloco){
+    const vazios=valoresColuna(papeis.bloco).filter(v=>textoValor(v)==="").length;
+    if(vazios) pushCheck(checks,"aviso","Bloco incompleto",`${vazios} linha(s) sem bloco/repetição.`);
+    else pushCheck(checks,"ok","Blocos preenchidos",`${nUnicos(valoresColuna(papeis.bloco))} bloco(s)/repetição(ões).`);
+  }
+
+  if(papeis.n_total && papeis.resposta){
+    const rows=linhasAtuais();
+    const y=numsColuna(papeis.resposta), n=numsColuna(papeis.n_total);
+    const controle=rows.map((r,i)=>({r,i})).filter(({r})=>
+      (papeis.dose && Number.isFinite(numBR(r[papeis.dose])) && numBR(r[papeis.dose])===0) ||
+      (papeis.fatores||[]).some(f=>nomeControleProvavel(r[f]))
+    );
+    if(controle.length){
+      const mortalidades=controle.map(({i})=>Number.isFinite(y[i])&&Number.isFinite(n[i])&&n[i]>0 ? (y[i]/n[i])*100 : NaN).filter(Number.isFinite);
+      const media=mortalidades.reduce((a,b)=>a+b,0)/(mortalidades.length||1);
+      if(mortalidades.length && media>20) pushCheck(checks,"aviso","Controle alto",`Mortalidade/evento médio do controle: ${fmt(media,1)}%.`);
+      else if(mortalidades.length) pushCheck(checks,"ok","Controle dentro do esperado",`Média do controle: ${fmt(media,1)}%.`);
+    } else {
+      pushCheck(checks,"aviso","Controle não identificado","Não encontrei dose 0 nem nome de controle/testemunha.");
+    }
+  }
+
+  checarDuplicatasGerais(checks);
+  return montarInfoPipeline("analise", rota, tipo, checks);
+}
+function avaliarPipelineTempo(){
+  const checks=[];
+  const papeis=lerPapeisTempo();
+  const nLin=COLUNAS[0]?.valores.length || 0;
+  const obrig=["tratamento","tempo","n_total","n_vivos"];
+  pushCheck(checks,"ok","Dados carregados",`${nLin} linha(s) e ${COLUNAS.length} coluna(s).`);
+  obrig.forEach(k=>{ if(!papeis[k]) pushCheck(checks,"critico","Papel obrigatório ausente",`Marque a coluna de ${k}.`, true); });
+  const rota={titulo:"Mortalidade no tempo", descricao:"Checar sobrevivência por avaliação, correção do controle, letras por tempo, LT50/LT90 e modelos de tempo.", chips:["QA/QC","Kaplan-Meier","GLM tempo"]};
+
+  if(obrig.every(k=>papeis[k])){
+    const tempo=numsColuna(papeis.tempo), nt=numsColuna(papeis.n_total), nv=numsColuna(papeis.n_vivos);
+    let invalidos=0, impossiveis=0;
+    for(let i=0;i<nLin;i++){
+      if(!Number.isFinite(tempo[i]) || !Number.isFinite(nt[i]) || !Number.isFinite(nv[i]) || nt[i]<=0) invalidos++;
+      else if(nv[i]<0 || nv[i]>nt[i]) impossiveis++;
+    }
+    if(invalidos) pushCheck(checks,"critico","Valores inválidos",`${invalidos} linha(s) com tempo, n total ou n vivos inválidos.`, true);
+    if(impossiveis) pushCheck(checks,"critico","Vivos impossíveis",`${impossiveis} linha(s) com n vivos < 0 ou maior que n total.`, true);
+    if(!invalidos && !impossiveis) pushCheck(checks,"ok","Contagens válidas","n vivos e n total passam na checagem básica.");
+
+    const tratamentos=valoresColuna(papeis.tratamento);
+    const temposUnicos=[...new Set(tempo.filter(Number.isFinite).map(v=>String(v)))];
+    if(nUnicos(tratamentos)<2) pushCheck(checks,"critico","Poucos tratamentos","É preciso ao menos 2 tratamentos para mortalidade no tempo.", true);
+    else pushCheck(checks,"ok","Tratamentos detectados",`${nUnicos(tratamentos)} tratamento(s).`);
+    if(temposUnicos.length<2) pushCheck(checks,"critico","Poucos tempos","É preciso ao menos 2 tempos de avaliação.", true);
+    else pushCheck(checks,"ok","Tempos detectados",`${temposUnicos.length} tempo(s) de avaliação.`);
+
+    const rep= papeis.repeticao ? valoresColuna(papeis.repeticao) : Array.from({length:nLin},()=> "1");
+    const vistos=new Set(); let duplicatas=0;
+    const series=new Map();
+    for(let i=0;i<nLin;i++){
+      const key=[textoValor(tratamentos[i]), textoValor(rep[i]), String(tempo[i])].join("||");
+      if(vistos.has(key)) duplicatas++; else vistos.add(key);
+      const skey=[textoValor(tratamentos[i]), textoValor(rep[i])].join("||");
+      if(!series.has(skey)) series.set(skey,[]);
+      series.get(skey).push({tempo:tempo[i], vivos:nv[i]});
+    }
+    if(duplicatas) pushCheck(checks,"critico","Avaliações duplicadas",`${duplicatas} combinação(ões) tratamento/repetição/tempo repetidas.`, true);
+    else pushCheck(checks,"ok","Sem duplicatas por tempo","Tratamento + repetição + tempo está único.");
+
+    let aumentos=0;
+    series.forEach(lista=>{
+      lista.filter(x=>Number.isFinite(x.tempo)&&Number.isFinite(x.vivos)).sort((a,b)=>a.tempo-b.tempo)
+        .forEach((x,i,arr)=>{ if(i && x.vivos>arr[i-1].vivos) aumentos++; });
+    });
+    if(aumentos) pushCheck(checks,"aviso","N vivos aumentou no tempo",`${aumentos} aumento(s) detectado(s). Pode ser erro de lançamento ou reposição de indivíduos.`);
+    else pushCheck(checks,"ok","Monotonicidade","n vivos não aumenta ao longo do tempo nas séries.");
+
+    const controle=$("#opt-controle-neg")?.value || textoValor([...new Set(tratamentos.map(textoValor).filter(Boolean))][0]||"");
+    const ctrlMax=parseFloat(($("#opt-ctrlmax")?.value||"20").replace(",",".")) || 20;
+    if(controle){
+      const mortCtrl=[];
+      for(let i=0;i<nLin;i++){
+        if(textoValor(tratamentos[i])===controle && Number.isFinite(nt[i]) && nt[i]>0 && Number.isFinite(nv[i])){
+          mortCtrl.push(((nt[i]-nv[i])/nt[i])*100);
+        }
+      }
+      if(mortCtrl.length){
+        const max=Math.max(...mortCtrl);
+        if(max>ctrlMax) pushCheck(checks,"aviso","Controle acima do critério",`Controle ${controle}: mortalidade máxima ${fmt(max,1)}% (critério ${fmt(ctrlMax,1)}%).`);
+        else pushCheck(checks,"ok","Controle dentro do critério",`Controle ${controle}: mortalidade máxima ${fmt(max,1)}%.`);
+      }
+    }
+  }
+  return montarInfoPipeline("tempo", rota, "tempo", checks);
+}
+function montarInfoPipeline(modo, rota, tipo, checks){
+  const criticos=checks.filter(c=>c.severidade==="critico").length;
+  const avisos=checks.filter(c=>c.severidade==="aviso").length;
+  const oks=checks.filter(c=>c.severidade==="ok").length;
+  return {modo, rota, tipo, checks, criticos, avisos, oks, bloqueia: checks.some(c=>c.bloqueia)};
+}
+function avaliarPipelineAtual(){
+  if(!COLUNAS.length) return null;
+  return MODO==="tempo" ? avaliarPipelineTempo() : avaliarPipelineGeral();
+}
+function pipelineHtml(info, compacto=false){
+  if(!info) return "";
+  const chips=(info.rota.chips||[]).map(c=>chip(esc(c),"chip-info")).join("");
+  const status=info.criticos ? chip(`${info.criticos} crítico(s)`,"chip-alerta") : chip("sem críticos","chip-ok");
+  const resumo=`<div class="pipeline-resumo">`+
+    `<span>${status}</span><span>${chip(info.avisos+" aviso(s)", info.avisos?"chip-alerta":"chip-ok")}</span><span>${chip(info.oks+" OK","chip-ok")}</span>`+
+    `</div>`;
+  const checks=info.checks.map(c=>
+    `<li class="qa-item qa-${c.severidade}"><b>${esc(c.titulo)}</b><span>${esc(c.detalhe||"")}</span></li>`
+  ).join("");
+  return `<div class="pipeline-panel">`+
+    `<div class="pipeline-head"><div><span class="pipeline-kicker">Rota recomendada</span><h3>${esc(info.rota.titulo)}</h3><p>${esc(info.rota.descricao)}</p></div><div class="pipeline-chipset">${chips}</div></div>`+
+    resumo+
+    (compacto ? "" : `<ul class="qa-list">${checks}</ul>`)+
+    `</div>`;
+}
+function renderPipelineStatus(info){
+  const card=$("#card-pipeline"), box=$("#pipeline-status");
+  if(!card || !box) return;
+  if(!info){ card.classList.add("oculto"); box.innerHTML=""; return; }
+  card.classList.remove("oculto");
+  box.innerHTML=pipelineHtml(info);
+  const btn=$("#btn-analisar");
+  if(btn) btn.disabled=!!info.bloqueia;
+}
+function atualizarPipeline(){
+  const info=avaliarPipelineAtual();
+  renderPipelineStatus(info);
+  return info;
+}
+function validarPipelineAntesDeAnalisar(){
+  const info=atualizarPipeline();
+  if(info && info.bloqueia){
+    avisar("Corrija os pontos críticos da conferência antes de analisar.");
+    $("#card-pipeline").scrollIntoView({behavior:"smooth", block:"start"});
+    return false;
+  }
+  return true;
+}
+function renderPipelineRelatorio(out){
+  const info=avaliarPipelineAtual();
+  if(info) out.appendChild(secao("Pipeline guiado", pipelineHtml(info, true)));
+}
+["#opt-tipo","#opt-alfa","#opt-unidade","#opt-niveis","#opt-controle","#opt-logdose",
+ "#opt-controle-neg","#opt-sk","#opt-alfa-tempo","#opt-ctrlmax"].forEach(sel=>{
+  const node=$(sel);
+  if(node){
+    node.addEventListener("change", atualizarPipeline);
+    node.addEventListener("input", atualizarPipeline);
+  }
+});
+
+/* ----------------------------------------------------------------------- */
 /* Analisar                                                                */
 /* ----------------------------------------------------------------------- */
 async function rodarPython(fnNome, papeis, opcoes){
@@ -647,8 +990,9 @@ async function rodarPython(fnNome, papeis, opcoes){
 
 $("#btn-analisar").addEventListener("click", async () => {
   if(MODO==="tempo") return analisarTempo();
+  if(!validarPipelineAntesDeAnalisar()) return;
   const papeis = lerPapeis();
-  if(!papeis.resposta){ alert("Defina qual coluna é a Resposta."); return; }
+  if(!papeis.resposta){ avisar("Defina qual coluna é a Resposta."); return; }
   const opcoes = { alfa: parseFloat($("#opt-alfa").value), log_dose: $("#opt-logdose").checked };
   const uni = ($("#opt-unidade").value||"").trim(); if(uni) opcoes.unidade_dose = uni;
   const niveisStr = ($("#opt-niveis").value||"").trim();
@@ -665,9 +1009,10 @@ $("#btn-analisar").addEventListener("click", async () => {
 });
 
 async function analisarTempo(){
+  if(!validarPipelineAntesDeAnalisar()) return;
   const papeis = lerPapeisTempo();
   const falta = ["tratamento","tempo","n_total","n_vivos"].filter(k=>!papeis[k]);
-  if(falta.length){ alert("Defina as colunas: "+falta.join(", ")); return; }
+  if(falta.length){ avisar("Defina as colunas: "+falta.join(", ")); return; }
   const opcoes = {
     alfa: parseFloat($("#opt-alfa-tempo").value),
     sk_threshold: parseInt($("#opt-sk").value),
@@ -691,10 +1036,10 @@ function renderRelatorio(rel){
   setNavTravado("resultados", false);
   setNavAtivo("resultados");
   if(!rel.ok){
-    out.appendChild(htmlBloco(`<div class="erro-box"><b>Não foi possível analisar.</b><br>${rel.erro||""}</div>`));
-    if(rel.trace) out.appendChild(htmlBloco(`<pre style="font-size:11px;overflow:auto">${rel.trace}</pre>`));
+    out.appendChild(renderErroRelatorio(rel));
     $("#card-resultados").scrollIntoView({behavior:"smooth"}); return;
   }
+  renderPipelineRelatorio(out);
   // Detecção
   const det=rel.deteccao;
   out.appendChild(secao("Detecção",
@@ -720,6 +1065,10 @@ function renderRelatorio(rel){
 function secao(titulo, htmlInterno){ const b=el("div","bloco"); b.innerHTML=`<h3>${titulo}</h3>`+htmlInterno; return b; }
 function htmlBloco(html){ const b=el("div","bloco"); b.innerHTML=html; return b; }
 function chip(t,c="chip-info"){ return `<span class="chip ${c}">${t}</span>`; }
+function renderErroRelatorio(rel){
+  const detalhe = rel.trace ? `<details class="trace-box"><summary>Detalhes técnicos</summary><pre>${esc(rel.trace)}</pre></details>` : "";
+  return htmlBloco(`<div class="erro-box"><b>Não foi possível analisar.</b><br>${esc(rel.erro||"Verifique os dados e os papéis das colunas.")}</div>${detalhe}`);
+}
 
 function tabelaDescritiva(desc){
   const temProp = desc[0] && ("proporcao" in desc[0]);
@@ -869,10 +1218,10 @@ function renderRelatorioTempo(rel){
   setNavTravado("resultados", false);
   setNavAtivo("resultados");
   if(!rel.ok){
-    out.appendChild(htmlBloco(`<div class="erro-box"><b>Não foi possível analisar.</b><br>${rel.erro||""}</div>`));
-    if(rel.trace) out.appendChild(htmlBloco(`<pre style="font-size:11px;overflow:auto">${rel.trace}</pre>`));
+    out.appendChild(renderErroRelatorio(rel));
     $("#card-resultados").scrollIntoView({behavior:"smooth"}); return;
   }
+  renderPipelineRelatorio(out);
   // Cabeçalho
   out.appendChild(secao(rel.tipo_analise,
     `<div>${chip(rel.n_tratamentos+" tratamentos","chip-info")} ${chip(rel.tempos.length+" tempos","chip-info")} `+
@@ -1092,7 +1441,7 @@ function erf(x){ const t=1/(1+0.3275911*Math.abs(x)); const y=1-(((((1.061405429
 /* ----------------------------------------------------------------------- */
 $("#btn-imprimir").addEventListener("click", ()=>window.print());
 $("#btn-copiar").addEventListener("click", ()=>{
-  navigator.clipboard.writeText($("#resultados").innerText).then(()=>alert("Relatório copiado."));
+  navigator.clipboard.writeText($("#resultados").innerText).then(()=>avisar("Relatório copiado.", "ok"));
 });
 
 /* Service worker */

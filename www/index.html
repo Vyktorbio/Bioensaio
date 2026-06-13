@@ -3,13 +3,21 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<meta name="theme-color" content="#0c1110" />
-<title>BioEstat</title>
+<meta name="theme-color" content="#143c31" />
+<title>BioEnsaio</title>
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icons/icon-180.png" />
-<link rel="stylesheet" href="styles.css?v=bioestat-menus-2" />
+<link rel="stylesheet" href="styles.css?v=bioensaio-pipeline-1" />
 </head>
 <body>
+<header class="appbar" aria-label="BioEnsaio">
+  <div class="brand-mark">BE</div>
+  <div class="brand-copy">
+    <strong>BioEnsaio</strong>
+    <span>Estatística para bioensaios</span>
+  </div>
+</header>
+
 <nav class="appnav" aria-label="Menu principal">
   <a class="appnav-item ativo" href="#card-dados" data-nav="dados">Dados</a>
   <a class="appnav-item travado" href="#card-papeis" data-nav="papeis" aria-disabled="true">Papéis</a>
@@ -42,7 +50,7 @@
     </div>
 
     <div class="painel oculto" data-painel="matriz">
-      <p class="dica">Importe a planilha exportada pelo Matriz. O BioEstat vai separar estudo, data e variável antes de analisar.</p>
+      <p class="dica">Importe a planilha exportada pelo Matriz. O BioEnsaio vai separar estudo, data e variável antes de analisar.</p>
       <input type="file" id="entrada-matriz" accept=".xlsx,.xls,.csv" />
       <div id="matriz-importador" class="matriz-importador oculto"></div>
     </div>
@@ -74,9 +82,15 @@
     <div id="papeis-lista" class="papeis-lista"></div>
   </section>
 
-  <!-- 3. OPÇÕES -->
+  <!-- 3. CONFERÊNCIA -->
+  <section class="card oculto" id="card-pipeline">
+    <h2><span class="num">3</span> Conferência</h2>
+    <div id="pipeline-status"></div>
+  </section>
+
+  <!-- 4. OPÇÕES -->
   <section class="card oculto" id="card-opcoes">
-    <h2><span class="num">3</span> Análise</h2>
+    <h2><span class="num">4</span> Análise</h2>
     <div class="analysis-switch" role="tablist" aria-label="Tipo de análise">
       <button class="analysis-mode ativo" type="button" data-modo="analise">Geral</button>
       <button class="analysis-mode" type="button" data-modo="tempo">Tempo</button>
@@ -124,9 +138,9 @@
     </div>
   </section>
 
-  <!-- 3T. OPÇÕES — MORTALIDADE NO TEMPO -->
+  <!-- 4T. OPÇÕES — MORTALIDADE NO TEMPO -->
   <section class="card oculto" id="card-opcoes-tempo">
-    <h2><span class="num">3</span> Análise</h2>
+    <h2><span class="num">4</span> Análise</h2>
     <div class="analysis-switch" role="tablist" aria-label="Tipo de análise">
       <button class="analysis-mode" type="button" data-modo="analise">Geral</button>
       <button class="analysis-mode ativo" type="button" data-modo="tempo">Tempo</button>
@@ -159,9 +173,9 @@
     <button class="btn-principal" id="btn-analisar" disabled>Analisar</button>
   </div>
 
-  <!-- 4. RESULTADOS -->
+  <!-- 5. RESULTADOS -->
   <section class="card oculto" id="card-resultados">
-    <h2><span class="num">4</span> Resultados</h2>
+    <h2><span class="num">5</span> Resultados</h2>
     <div id="resultados"></div>
     <div class="export-acoes">
       <button class="btn-sec" id="btn-imprimir">Imprimir / PDF</button>
@@ -170,7 +184,9 @@
   </section>
 </main>
 
-<footer class="brand-footer">BioEstat</footer>
+<footer class="brand-footer">BioEnsaio</footer>
+
+<div id="toast" class="toast oculto" role="status" aria-live="polite"></div>
 
 <!-- Overlay de carregamento do motor -->
 <div id="overlay" class="overlay oculto">
@@ -184,6 +200,6 @@
 <script src="lib/xlsx.full.min.js"></script>
 <script src="pyodide/pyodide.js"></script>
 <script src="exemplos.js"></script>
-<script src="app.js?v=bioestat-menus-2"></script>
+<script src="app.js?v=bioensaio-pipeline-1"></script>
 </body>
 </html>
